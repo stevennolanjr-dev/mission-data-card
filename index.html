@@ -2909,6 +2909,14 @@ function renderGpsLive(gpsHits) {
 }
 
 // ===== WEATHER =====
+// Aviation Weather Center removed CORS headers — route through proxy when on a hosted origin
+const AWC = (url) => {
+  if (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return url; // direct fetch works locally
+  }
+  return 'https://corsproxy.io/?' + encodeURIComponent(url);
+};
+
 async function fetchWx() {
   const icaos = getIcaos();
   if (!icaos.length) { alert('Enter at least one ICAO airport identifier.'); return; }
@@ -2920,8 +2928,8 @@ async function fetchWx() {
   for (const icao of icaos) {
     try {
       const [mr, tr] = await Promise.all([
-        fetch('https://aviationweather.gov/api/data/metar?ids='+icao+'&format=json&taf=false&hours=3'),
-        fetch('https://aviationweather.gov/api/data/taf?ids='+icao+'&format=json')
+        fetch(AWC('https://aviationweather.gov/api/data/metar?ids='+icao+'&format=json&taf=false&hours=3')),
+        fetch(AWC('https://aviationweather.gov/api/data/taf?ids='+icao+'&format=json'))
       ]);
       const md = await mr.json();
       const td = await tr.json();
@@ -2937,7 +2945,7 @@ async function fetchWx() {
   }
   // SIGMETs
   try {
-    const sr = await fetch('https://aviationweather.gov/api/data/airsigmet?format=json');
+    const sr = await fetch(AWC('https://aviationweather.gov/api/data/airsigmet?format=json'));
     const sd = await sr.json();
     renderSigmet(sd);
   } catch(e) {
