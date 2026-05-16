@@ -2914,7 +2914,7 @@ const AWC = (url) => {
   if (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return url; // direct fetch works locally
   }
-  return 'https://corsproxy.io/?' + encodeURIComponent(url);
+  return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
 };
 
 async function fetchWx() {
@@ -2938,6 +2938,7 @@ async function fetchWx() {
       localStorage.setItem('wx_cache', JSON.stringify(cache));
       renderWxCard(icao, md[0]||null, td[0]||null, false, null);
     } catch(e) {
+      console.error('WX fetch error ['+icao+']:', e.message, e);
       const cache = JSON.parse(localStorage.getItem('wx_cache')||'{}');
       if (cache[icao]) renderWxCard(icao, cache[icao].metar, cache[icao].taf, true, cache[icao].ts);
       else renderWxCard(icao, null, null, true, null);
