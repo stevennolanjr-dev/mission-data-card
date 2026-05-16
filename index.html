@@ -523,6 +523,30 @@ a { color:var(--accent-blue); }
   padding:1px 5px;
   font-weight:600;
 }
+.wx-toggle-bar {
+  display:flex;
+  gap:0;
+  padding:5px 8px 0;
+  border-bottom:1px solid var(--card-border);
+}
+.wx-mode-btn {
+  background:transparent;
+  border:1px solid var(--card-border);
+  color:var(--text-dim);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:0.07em;
+  padding:2px 10px;
+  cursor:pointer;
+  transition:background 0.12s,color 0.12s;
+}
+.wx-mode-btn:first-child { border-radius:4px 0 0 4px; }
+.wx-mode-btn:last-child  { border-radius:0 4px 4px 0; border-left:none; }
+.wx-mode-btn.active {
+  background:var(--accent-blue);
+  color:#fff;
+  border-color:var(--accent-blue);
+}
 .metar-raw {
   font-family:'SF Mono','Fira Code','Consolas',monospace;
   font-size:11px;
@@ -2824,50 +2848,89 @@ function updateDaipLinks() {
   ).join('');
 }
 
-// ===== PUBLIC NOTAM API (aviationapi.com — free, no key, CORS-enabled) =====
+// ===== NOTAM FETCH — multi-source with fallback =====
 async function fetchNotamsPublic(icaos) {
   const results = {};
-  // Fetch with a 10s timeout so a hung request doesn't block the whole flow
-  async function fetchWithTimeout(url, ms=10000) {
+  const avwxToken = localStorage.getItem('avwx_token');
+  const hosted = isHostedOrigin();
+
+  async function timedFetch(url, opts, ms=10000) {
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), ms);
-    try {
-      const r = await fetch(url, { signal: ctrl.signal });
-      clearTimeout(tid);
-      return r;
-    } catch(e) {
-      clearTimeout(tid);
-      throw e;
-    }
+    try { const r = await fetch(url, { ...opts, signal: ctrl.signal }); clearTimeout(tid); return r; }
+    catch(e) { clearTimeout(tid); throw e; }
   }
+
   for (const icao of icaos) {
-    try {
-      // aviationapi.com expects the bare identifier (e.g. LTS), not the K-prefixed ICAO
-      // Try the input as-is first, then strip a leading K if no results come back
-      const bare = icao.replace(/^K/,'');
-      const url = `https://api.aviationapi.com/v1/notams?apt=${encodeURIComponent(bare)}`;
-      const res = await fetchWithTimeout(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      // Response key may be bare (LTS) or prefixed (KLTS) depending on the record
-      const items = data[icao] || data[bare] || null;
-      if (items !== null) {
-        results[icao] = items;
-      } else {
-        // Key not found in response — airport may not be in aviationapi.com DB
-        results[icao] = [];
-        console.warn(`NOTAM: no data key for ${icao} in response`, Object.keys(data).slice(0,5));
-      }
-    } catch(e) {
-      results[icao] = null;
-      console.warn(`NOTAM fetch failed for ${icao}:`, e.message);
+    let items = null;
+
+    // Source 1: AVWX — CORS-enabled, same token we use for METAR/TAF
+    // Works from hosted AND localhost. Use whenever token is available.
+    if (avwxToken) {
+      try {
+        const url = `https://avwx.rest/api/notam/${encodeURIComponent(icao)}?token=${avwxToken}`;
+        const res = await timedFetch(url, {});
+        if (res.ok) {
+          const data = await res.json();
+          // AVWX returns an array of NOTAM objects with .raw / .number / .start_time / .end_time
+          if (Array.isArray(data)) { items = data; }
+          else if (data.error) console.warn(`AVWX NOTAM ${icao}: ${data.error}`);
+        }
+      } catch(e) { console.warn(`AVWX NOTAM failed for ${icao}:`, e.message); }
     }
+
+    // Source 2: AWC direct — no CORS issues on localhost/file://, blocked on hosted
+    if (items === null && !hosted) {
+      try {
+        const url = `https://aviationweather.gov/api/data/notam?ids=${encodeURIComponent(icao)}&format=json`;
+        const res = await timedFetch(url, {});
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) items = data;
+        }
+      } catch(e) { console.warn(`AWC NOTAM failed for ${icao}:`, e.message); }
+    }
+
+    // Source 3: aviationapi.com — free, no key, CORS-enabled (may be unreliable)
+    if (items === null) {
+      try {
+        const bare = icao.replace(/^K/,'');
+        const url = `https://api.aviationapi.com/v1/notams?apt=${encodeURIComponent(bare)}`;
+        const res = await timedFetch(url, {});
+        if (res.ok) {
+          const data = await res.json();
+          const found = data[icao] || data[bare];
+          if (found !== undefined) items = found;
+          else { items = []; console.warn(`NOTAM: no key for ${icao} in aviationapi response`); }
+        }
+      } catch(e) { console.warn(`aviationapi NOTAM failed for ${icao}:`, e.message); }
+    }
+
+    results[icao] = items; // null = all sources failed; [] = no active NOTAMs
   }
   return results;
 }
 function extractNotam(item) {
   try {
-    // aviationapi.com format
+    // AVWX format: { raw, sanitized, number, start_time:{dt}, end_time:{dt} }
+    if (item.raw !== undefined && item.start_time !== undefined) {
+      return {
+        number: item.number || item.id || '?',
+        message: item.raw || item.sanitized || '',
+        start: item.start_time?.dt || item.start_time?.repr || '',
+        end:   item.end_time?.dt  || item.end_time?.repr  || ''
+      };
+    }
+    // AWC format: { notamID, message/notam_Text, startTime, endTime }
+    if (item.notamID !== undefined || item.notam_Text !== undefined) {
+      return {
+        number: item.notamID || item.id || '?',
+        message: item.message || item.notam_Text || item.raw || '',
+        start: item.startTime || item.effectiveStart || '',
+        end:   item.endTime   || item.effectiveEnd   || ''
+      };
+    }
+    // aviationapi.com format: { notam_number, message, effective_start, effective_end }
     if (item.notam_number !== undefined || item.message !== undefined) {
       return {
         number: item.notam_number || item.id || '?',
@@ -2876,7 +2939,7 @@ function extractNotam(item) {
         end: item.effective_end || ''
       };
     }
-    // FAA API nested format (fallback)
+    // FAA nested format (legacy fallback)
     const n = item?.properties?.coreNOTAMData?.notam || item?.notam || item;
     return {
       number: n?.number || n?.notamNumber || '?',
@@ -3094,6 +3157,15 @@ function fmtWind(m) {
   if (m.wgst) s += ' G'+m.wgst+'kt';
   return s;
 }
+function wxSetMode(btn, mode) {
+  const card = btn.closest('.wx-airport-card');
+  card.querySelectorAll('.wx-mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const rawV = card.querySelector('.wx-raw-view');
+  const decV = card.querySelector('.wx-decoded-view');
+  if (rawV) rawV.style.display = mode === 'raw' ? '' : 'none';
+  if (decV) decV.style.display = mode === 'decoded' ? '' : 'none';
+}
 function renderWxCard(icao, metar, taf, cached, ts) {
   const container = document.getElementById('wx-cards');
   let card = document.getElementById('wx-card-'+icao);
@@ -3107,32 +3179,43 @@ function renderWxCard(icao, metar, taf, cached, ts) {
   const catColor = fltCatColor(cat);
   const ageStr = ts ? Math.round((Date.now()-ts)/60000)+' min ago' : '';
   const cachedBadge = cached ? '<span class="cache-badge">CACHED '+(ageStr||'')+'</span>' : '';
-  const escRaw = s => s ? s.replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
-  const dismissId = 'wx-card-'+icao;
+  const esc = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+
+  const tafBlock = taf
+    ? '<details class="taf-section"><summary>TAF ▸</summary><div class="metar-raw">'+esc(taf.rawTAF||'No TAF')+'</div></details>'
+    : '<div style="font-size:11px;color:var(--text-dim);margin-top:6px;">No TAF available</div>';
+
+  const rawView = metar
+    ? '<div class="wx-raw-view card-body" style="padding:8px 10px;">'
+      + '<div class="metar-raw">'+esc(metar.rawOb||'No raw METAR')+'</div>'
+      + tafBlock + '</div>'
+    : '<div class="wx-raw-view card-body"><div class="wx-no-data">No data — fetch when connected</div></div>';
+
+  const decodedView = metar
+    ? '<div class="wx-decoded-view card-body" style="display:none;padding:8px 10px;">'
+      + '<div class="wx-grid">'
+      + '<div class="wx-item"><div class="wx-lbl">Time</div><div class="wx-val">'+esc(metar.obsTime||'—')+'</div></div>'
+      + '<div class="wx-item"><div class="wx-lbl">Wind</div><div class="wx-val">'+esc(fmtWind(metar))+'</div></div>'
+      + '<div class="wx-item"><div class="wx-lbl">Vis</div><div class="wx-val">'+esc(metar.visib||'—')+' SM</div></div>'
+      + '<div class="wx-item"><div class="wx-lbl">Ceiling</div><div class="wx-val">'+(metar.cig ? metar.cig+' ft' : 'CLR')+'</div></div>'
+      + '<div class="wx-item"><div class="wx-lbl">Temp / Dew</div><div class="wx-val">'+(metar.temp!==undefined?metar.temp:'—')+'° / '+(metar.dewp!==undefined?metar.dewp:'—')+'°</div></div>'
+      + '<div class="wx-item"><div class="wx-lbl">Altimeter</div><div class="wx-val">'+(metar.altim?metar.altim.toFixed(2)+' inHg':'—')+'</div></div>'
+      + '</div>'
+      + tafBlock + '</div>'
+    : '<div class="wx-decoded-view card-body" style="display:none"><div class="wx-no-data">No data</div></div>';
+
   card.innerHTML =
-    '<button class="wx-card-dismiss" onclick="document.getElementById('+JSON.stringify(dismissId)+').remove()" title="Dismiss">×</button>'
+    '<button class="wx-card-dismiss" onclick="this.closest(\'.wx-airport-card\').remove()" title="Dismiss">×</button>'
     + '<div class="card-header" style="border-left-color:'+catColor+'">'
-    + icao + ' ' + cachedBadge
+    + escapeHtml(icao) + ' ' + cachedBadge
     + '<span class="flt-cat-badge" style="background:'+catColor+';margin-left:auto">'+cat+'</span>'
     + '</div>'
-    + (metar
-      ? '<div class="card-body" style="padding:8px 10px;">'
-        + '<div class="metar-raw">'+escRaw(metar.rawOb||'No raw METAR')+'</div>'
-        + '<div class="wx-grid">'
-        + '<div class="wx-item"><div class="wx-lbl">Time</div><div class="wx-val">'+(metar.obsTime||'—')+'</div></div>'
-        + '<div class="wx-item"><div class="wx-lbl">Wind</div><div class="wx-val">'+fmtWind(metar)+'</div></div>'
-        + '<div class="wx-item"><div class="wx-lbl">Vis</div><div class="wx-val">'+(metar.visib||'—')+' SM</div></div>'
-        + '<div class="wx-item"><div class="wx-lbl">Ceiling</div><div class="wx-val">'+(metar.cig ? metar.cig+' ft' : 'CLR')+'</div></div>'
-        + '<div class="wx-item"><div class="wx-lbl">Temp/Dew</div><div class="wx-val">'+(metar.temp !== undefined ? metar.temp : '—')+'° / '+(metar.dewp !== undefined ? metar.dewp : '—')+'°</div></div>'
-        + '<div class="wx-item"><div class="wx-lbl">Altimeter</div><div class="wx-val">'+(metar.altim ? metar.altim.toFixed(2)+' inHg' : '—')+'</div></div>'
-        + '</div>'
-        + (taf
-          ? '<details class="taf-section"><summary>TAF ▸</summary><div class="metar-raw">'+escRaw(taf.rawTAF||'No TAF')+'</div></details>'
-          : '<div style="font-size:11px;color:var(--text-dim);margin-top:6px;">No TAF available</div>'
-        )
-        + '</div>'
-      : '<div class="card-body"><div class="wx-no-data">No data — fetch when connected</div></div>'
-    );
+    + '<div class="wx-toggle-bar no-print">'
+    + '<button class="wx-mode-btn active" onclick="wxSetMode(this,\'raw\')">RAW</button>'
+    + '<button class="wx-mode-btn" onclick="wxSetMode(this,\'decoded\')">DECODED</button>'
+    + '</div>'
+    + rawView
+    + decodedView;
 }
 function renderSigmet(data) {
   const el = document.getElementById('sigmet-content');
