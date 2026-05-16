@@ -1219,10 +1219,16 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
     <span style="color:var(--text-secondary);">To enable live weather + NOTAMs: use the hosted version at <strong><a href="https://stevennolanjr-dev.github.io/mission-data-card/" target="_blank" rel="noopener" style="color:var(--accent-blue);">stevennolanjr-dev.github.io/mission-data-card</a></strong>, or open in <strong>Chrome/Firefox</strong> on Mac and serve locally — <code style="font-size:11px;background:rgba(0,0,0,0.08);padding:1px 5px;border-radius:3px;">python3 -m http.server 8080</code> in the card's folder, then browse to <code style="font-size:11px;background:rgba(0,0,0,0.08);padding:1px 5px;border-radius:3px;">http://localhost:8080</code>.</span>
   </div>
 
-  <!-- FAA API Key -->
+  <!-- API Keys -->
+  <div class="api-key-row" id="avwx-key-row">
+    <span class="api-key-label">🌤 AVWX TOKEN</span>
+    <input type="password" class="api-key-input" id="avwx-token-input" placeholder="avwx.rest token — required for live WX on hosted page…" autocomplete="off" spellcheck="false">
+    <button class="api-key-save-btn" onclick="saveAvwxKey()">SAVE</button>
+    <span class="api-key-status" id="avwx-key-status">No token — <a href="https://avwx.rest" target="_blank" style="color:var(--accent-blue);">get free token at avwx.rest</a></span>
+  </div>
   <div class="api-key-row" id="api-key-row">
     <span class="api-key-label">🔑 FAA API KEY</span>
-    <input type="password" class="api-key-input" id="faa-api-key-input" placeholder="Paste subscription key to enable live NOTAMs…" autocomplete="off" spellcheck="false">
+    <input type="password" class="api-key-input" id="faa-api-key-input" placeholder="api.faa.gov subscription key — enables live NOTAMs…" autocomplete="off" spellcheck="false">
     <button class="api-key-save-btn" onclick="saveApiKey()">SAVE</button>
     <span class="api-key-status" id="api-key-status">No key — DAIP links only</span>
   </div>
@@ -2908,14 +2914,62 @@ function renderGpsLive(gpsHits) {
   }
 }
 
-// ===== WEATHER =====
-// Aviation Weather Center removed CORS headers — route through proxy when on a hosted origin
-const AWC = (url) => {
-  if (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return url; // direct fetch works locally
+// ===== AVWX KEY =====
+function saveAvwxKey() {
+  const input = document.getElementById('avwx-token-input');
+  if (!input) return;
+  const key = input.value.trim();
+  if (!key) { alert('Paste your AVWX token first.'); return; }
+  localStorage.setItem('avwx_token', key);
+  input.value = '';
+  updateAvwxKeyStatus();
+}
+function clearAvwxKey() {
+  localStorage.removeItem('avwx_token');
+  updateAvwxKeyStatus();
+}
+function updateAvwxKeyStatus() {
+  const key = localStorage.getItem('avwx_token');
+  const el = document.getElementById('avwx-key-status');
+  if (!el) return;
+  if (key) {
+    el.innerHTML = '<span style="color:var(--accent-green);">✓ Token saved</span> <button class="api-key-clear" onclick="clearAvwxKey()">clear</button>';
+  } else {
+    el.innerHTML = 'No token — <a href="https://avwx.rest" target="_blank" style="color:var(--accent-blue);">get free token at avwx.rest</a>';
   }
-  return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-};
+}
+
+// ===== AVWX NORMALIZERS =====
+// Converts AVWX response shape → AWC shape so renderWxCard works unchanged
+function avwxToMetar(a) {
+  if (!a || a.error) return null;
+  const windDir = a.wind_direction?.repr === 'VRB' ? 'VRB' : (a.wind_direction?.value ?? 0);
+  const ceiling = a.clouds?.find(c => ['BKN','OVC','VV'].includes(c.type))?.altitude ?? null;
+  return {
+    rawOb:    a.raw || a.sanitized || '',
+    obsTime:  a.time?.dt || a.time?.repr || '',
+    wdir:     windDir,
+    wspd:     a.wind_speed?.value ?? 0,
+    wgst:     a.wind_gust?.value || null,
+    visib:    a.visibility?.value ?? null,
+    cig:      ceiling,
+    temp:     a.temperature?.value ?? null,
+    dewp:     a.dewpoint?.value ?? null,
+    altim:    a.altimeter?.value ?? null,
+    fltcat:   a.flight_rules || 'UNKN'
+  };
+}
+function avwxToTaf(a) {
+  if (!a || a.error) return null;
+  return { rawTAF: a.raw || '' };
+}
+
+// ===== WEATHER =====
+function isHostedOrigin() {
+  return !(window.location.protocol === 'file:' ||
+           window.location.hostname === 'localhost' ||
+           window.location.hostname === '127.0.0.1');
+}
 
 async function fetchWx() {
   const icaos = getIcaos();
@@ -2924,34 +2978,62 @@ async function fetchWx() {
   btn.disabled = true;
   btn.textContent = 'Fetching WX…';
   updateOnlineStatus();
+
+  const avwxToken = localStorage.getItem('avwx_token');
+  const hosted = isHostedOrigin();
+
+  if (hosted && !avwxToken) {
+    document.getElementById('wx-cards').innerHTML =
+      '<div class="wx-no-data" style="padding:20px;">Enter AVWX token above to enable live weather on the hosted page.</div>';
+    btn.disabled = false; btn.textContent = 'FETCH WX'; return;
+  }
+
   // METAR + TAF
   for (const icao of icaos) {
     try {
-      const [mr, tr] = await Promise.all([
-        fetch(AWC('https://aviationweather.gov/api/data/metar?ids='+icao+'&format=json&taf=false&hours=3')),
-        fetch(AWC('https://aviationweather.gov/api/data/taf?ids='+icao+'&format=json'))
-      ]);
-      const md = await mr.json();
-      const td = await tr.json();
+      let metar = null, taf = null;
+      if (hosted && avwxToken) {
+        // AVWX — has proper CORS headers
+        const base = 'https://avwx.rest/api/';
+        const [mr, tr] = await Promise.all([
+          fetch(base+'metar/'+icao+'?token='+avwxToken+'&options=info,translate'),
+          fetch(base+'taf/'+icao+'?token='+avwxToken)
+        ]);
+        metar = avwxToMetar(await mr.json());
+        taf   = avwxToTaf(await tr.json());
+      } else {
+        // Direct AWC — works fine from localhost / file://
+        const [mr, tr] = await Promise.all([
+          fetch('https://aviationweather.gov/api/data/metar?ids='+icao+'&format=json&taf=false&hours=3'),
+          fetch('https://aviationweather.gov/api/data/taf?ids='+icao+'&format=json')
+        ]);
+        const md = await mr.json(), td = await tr.json();
+        metar = md[0]||null; taf = td[0]||null;
+      }
       const cache = JSON.parse(localStorage.getItem('wx_cache')||'{}');
-      cache[icao] = { metar: md[0]||null, taf: td[0]||null, ts: Date.now() };
+      cache[icao] = { metar, taf, ts: Date.now() };
       localStorage.setItem('wx_cache', JSON.stringify(cache));
-      renderWxCard(icao, md[0]||null, td[0]||null, false, null);
+      renderWxCard(icao, metar, taf, false, null);
     } catch(e) {
-      console.error('WX fetch error ['+icao+']:', e.message, e);
+      console.error('WX fetch error ['+icao+']:', e.message);
       const cache = JSON.parse(localStorage.getItem('wx_cache')||'{}');
       if (cache[icao]) renderWxCard(icao, cache[icao].metar, cache[icao].taf, true, cache[icao].ts);
       else renderWxCard(icao, null, null, true, null);
     }
   }
-  // SIGMETs
-  try {
-    const sr = await fetch(AWC('https://aviationweather.gov/api/data/airsigmet?format=json'));
-    const sd = await sr.json();
-    renderSigmet(sd);
-  } catch(e) {
+
+  // SIGMETs — AWC works locally; on hosted show link
+  if (!hosted) {
+    try {
+      const sr = await fetch('https://aviationweather.gov/api/data/airsigmet?format=json');
+      renderSigmet(await sr.json());
+    } catch(e) {
+      const el = document.getElementById('sigmet-content');
+      if (el) el.innerHTML = '<div class="wx-no-data">Could not fetch SIGMETs</div>';
+    }
+  } else {
     const el = document.getElementById('sigmet-content');
-    if (el) el.innerHTML = '<div class="wx-no-data">Could not fetch SIGMETs — check connection</div>';
+    if (el) el.innerHTML = '<div class="wx-no-data"><a href="https://aviationweather.gov/en/category/sigmet" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:none;">View active SIGMETs on AWC ↗</a></div>';
   }
   // NOTAMs (FAA API — requires key)
   const apiKey = localStorage.getItem('faa_api_key');
@@ -3083,6 +3165,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderProfileDropdown();
   updateOnlineStatus();
   updateApiKeyStatus();
+  updateAvwxKeyStatus();
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
   // Set today's date
