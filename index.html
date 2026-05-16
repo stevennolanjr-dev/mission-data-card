@@ -1226,12 +1226,6 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
     <button class="api-key-save-btn" onclick="saveAvwxKey()">SAVE</button>
     <span class="api-key-status" id="avwx-key-status">No token — <a href="https://avwx.rest" target="_blank" style="color:var(--accent-blue);">get free token at avwx.rest</a></span>
   </div>
-  <div class="api-key-row" id="api-key-row">
-    <span class="api-key-label">🔑 FAA API KEY</span>
-    <input type="password" class="api-key-input" id="faa-api-key-input" placeholder="api.faa.gov subscription key — enables live NOTAMs…" autocomplete="off" spellcheck="false">
-    <button class="api-key-save-btn" onclick="saveApiKey()">SAVE</button>
-    <span class="api-key-status" id="api-key-status">No key — DAIP links only</span>
-  </div>
 
   <!-- Airport Input Row -->
   <div class="wx-input-row">
@@ -1271,12 +1265,10 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
       NOTAMs
     </div>
     <div class="card-body">
-      <!-- Live FAA NOTAM data — populated by fetchWx() when API key is present -->
+      <!-- Live NOTAMs — auto-fetched via aviationapi.com on FETCH WX -->
       <div id="notam-content" style="display:none; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--card-border);"></div>
-      <!-- DAIP fallback -->
-      <div id="notam-no-key">
-        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Configure FAA API key above for live NOTAMs. DAIP links below open official results in a new tab.</p>
-      </div>
+      <div id="notam-no-key" style="display:none;"></div>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;" id="notam-hint">Hit FETCH WX to load NOTAMs. DAIP links below for full military coverage.</p>
       <div id="daip-links" style="display:flex;flex-wrap:wrap;gap:8px;">
         <span style="font-size:12px;color:var(--text-dim);font-style:italic;">Enter airport ICAOs above to generate DAIP links</span>
       </div>
@@ -2773,6 +2765,11 @@ function initDark() {
   }
 }
 
+// ===== PERSONAL CONFIG — paste tokens here once =====
+const CONFIG = {
+  avwxToken: ''   // avwx.rest → Dashboard → Token (hardwire here to skip manual entry)
+};
+
 // ===== WX / NOTAM HELPERS =====
 function getIcaos() {
   return ['wx-dep','wx-dest','wx-alt1','wx-alt2','wx-alt3']
@@ -2793,53 +2790,16 @@ function updateDaipLinks() {
   ).join('');
 }
 
-// ===== FAA API KEY =====
-function saveApiKey() {
-  const input = document.getElementById('faa-api-key-input');
-  if (!input) return;
-  const key = input.value.trim();
-  if (!key) { alert('Paste your FAA subscription key first.'); return; }
-  localStorage.setItem('faa_api_key', key);
-  input.value = '';
-  updateApiKeyStatus();
-}
-function clearApiKey() {
-  localStorage.removeItem('faa_api_key');
-  const inp = document.getElementById('faa-api-key-input');
-  if (inp) inp.value = '';
-  updateApiKeyStatus();
-}
-function updateApiKeyStatus() {
-  const key = localStorage.getItem('faa_api_key');
-  const el = document.getElementById('api-key-status');
-  if (!el) return;
-  if (key) {
-    el.innerHTML = '<span style="color:var(--accent-green);">✓ Key saved</span> <button class="api-key-clear" onclick="clearApiKey()">clear</button>';
-    const nk = document.getElementById('notam-no-key');
-    if (nk) nk.style.display = 'none';
-  } else {
-    el.textContent = 'No key — DAIP links only';
-    const nk = document.getElementById('notam-no-key');
-    if (nk) nk.style.display = '';
-  }
-}
-
-// ===== FAA NOTAM API =====
-async function fetchNotams(icaos, apiKey) {
+// ===== PUBLIC NOTAM API (aviationapi.com — free, no key, CORS-enabled) =====
+async function fetchNotamsPublic(icaos) {
   const results = {};
   for (const icao of icaos) {
     try {
-      const url = `https://api.faa.gov/notamSearch/notams?icaoLocation=${encodeURIComponent(icao)}&pageNum=1&pageSize=30`;
-      const res = await fetch(url, {
-        headers: {
-          'client_id': apiKey,
-          'Ocp-Apim-Subscription-Key': apiKey,
-          'Accept': 'application/json'
-        }
-      });
+      const res = await fetch(`https://api.aviationapi.com/v1/notams?apt=${encodeURIComponent(icao)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      results[icao] = data.items || [];
+      // Response: { "ICAO": [...] } — key may be with or without K-prefix
+      results[icao] = data[icao] || data[icao.replace(/^K/,'')] || [];
     } catch(e) {
       results[icao] = null;
       console.warn(`NOTAM fetch failed for ${icao}:`, e.message);
@@ -2849,11 +2809,20 @@ async function fetchNotams(icaos, apiKey) {
 }
 function extractNotam(item) {
   try {
+    // aviationapi.com format
+    if (item.notam_number !== undefined || item.message !== undefined) {
+      return {
+        number: item.notam_number || item.id || '?',
+        message: item.message || item.raw || '',
+        start: item.effective_start || item.issued || '',
+        end: item.effective_end || ''
+      };
+    }
+    // FAA API nested format (fallback)
     const n = item?.properties?.coreNOTAMData?.notam || item?.notam || item;
-    const msg = n?.message || n?.traditionalMessage || n?.icaoMessage || JSON.stringify(item).slice(0,200);
     return {
       number: n?.number || n?.notamNumber || '?',
-      message: String(msg),
+      message: String(n?.message || n?.traditionalMessage || n?.icaoMessage || ''),
       start: n?.effectiveStart || n?.issued || '',
       end: n?.effectiveEnd || ''
     };
@@ -2876,7 +2845,7 @@ function renderNotams(notamData) {
   for (const icao of icaos) {
     const items = notamData[icao];
     if (items === null) {
-      html += `<div class="notam-icao-section"><div class="notam-icao-title">${icao} <span style="color:var(--accent-red);font-size:10px;">fetch failed — check API key</span></div></div>`;
+      html += `<div class="notam-icao-section"><div class="notam-icao-title">${icao} <span style="color:var(--accent-red);font-size:10px;">fetch failed</span></div></div>`;
       continue;
     }
     html += `<div class="notam-icao-section"><div class="notam-icao-title">${icao} <span class="notam-count">${items.length}</span></div>`;
@@ -3035,13 +3004,13 @@ async function fetchWx() {
     const el = document.getElementById('sigmet-content');
     if (el) el.innerHTML = '<div class="wx-no-data"><a href="https://aviationweather.gov/en/category/sigmet" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:none;">View active SIGMETs on AWC ↗</a></div>';
   }
-  // NOTAMs (FAA API — requires key)
-  const apiKey = localStorage.getItem('faa_api_key');
-  if (apiKey) {
-    btn.textContent = 'Fetching NOTAMs…';
-    const notamData = await fetchNotams(icaos, apiKey);
-    renderNotams(notamData);
-  }
+  // NOTAMs — free public API, always fetch
+  btn.textContent = 'Fetching NOTAMs…';
+  const notamData = await fetchNotamsPublic(icaos);
+  renderNotams(notamData);
+  const hint = document.getElementById('notam-hint');
+  if (hint) hint.style.display = 'none';
+
   btn.disabled = false;
   btn.textContent = 'FETCH WX';
 }
@@ -3163,8 +3132,9 @@ function downloadHTML() {
 document.addEventListener('DOMContentLoaded', () => {
   initDark();
   renderProfileDropdown();
+  // Auto-load hardwired AVWX token from CONFIG (if set and not already in storage)
+  if (CONFIG.avwxToken && !localStorage.getItem('avwx_token')) localStorage.setItem('avwx_token', CONFIG.avwxToken);
   updateOnlineStatus();
-  updateApiKeyStatus();
   updateAvwxKeyStatus();
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
