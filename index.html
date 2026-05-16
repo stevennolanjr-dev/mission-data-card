@@ -767,6 +767,23 @@ a { color:var(--accent-blue); }
   .calc-grid { grid-template-columns:1fr; }
 }
 
+/* ===== MOBILE HEADER ===== */
+@media (max-width:640px) {
+  .header-bar { gap:6px; padding:6px 8px; flex-wrap:wrap; }
+  .header-center { gap:8px; order:3; width:100%; justify-content:flex-start; }
+  .student-input { width:70px; font-size:12px; }
+  .header-right { gap:4px; flex-wrap:wrap; }
+  .date-input { width:130px; font-size:11px; padding:3px 5px; }
+  .profile-select { max-width:100px; font-size:11px; padding:3px 5px; }
+  .hdr-btn { padding:3px 7px; font-size:11px; min-width:32px; }
+  /* hide labels on reset/dark buttons, keep Save/Del readable */
+  #edit-btn, #dark-btn { font-size:13px; min-width:32px; padding:3px 6px; }
+}
+@media (max-width:420px) {
+  .profile-select { max-width:80px; }
+  .date-input { width:110px; }
+}
+
 /* ===== SVG ICONS ===== */
 .icon { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 
@@ -1032,10 +1049,6 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
     <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     LL GK
   </button>
-  <button class="tab-btn" onclick="switchTab('tacgk', this)">
-    <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-    TAC GK
-  </button>
   <button class="tab-btn" onclick="switchTab('ardb', this)">
     <svg class="icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
     AR DB
@@ -1215,8 +1228,8 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
 
   <!-- file:// origin warning — shown automatically when needed -->
   <div id="file-origin-banner" style="display:none; background:color-mix(in srgb,var(--accent-amber) 12%,var(--card-bg)); border:1.5px solid var(--accent-amber); border-radius:12px; padding:12px 16px; margin-bottom:12px; font-size:13px; color:var(--text-primary); line-height:1.6;">
-    <strong style="color:var(--accent-amber);">⚠ Live fetch unavailable</strong> — this card is open as a local file (<code style="font-size:11px;background:rgba(0,0,0,0.08);padding:1px 5px;border-radius:3px;">file://</code>). Browsers block external API requests from local files.<br>
-    <span style="color:var(--text-secondary);">To enable live weather + NOTAMs: use the hosted version at <strong><a href="https://stevennolanjr-dev.github.io/mission-data-card/" target="_blank" rel="noopener" style="color:var(--accent-blue);">stevennolanjr-dev.github.io/mission-data-card</a></strong>, or open in <strong>Chrome/Firefox</strong> on Mac and serve locally — <code style="font-size:11px;background:rgba(0,0,0,0.08);padding:1px 5px;border-radius:3px;">python3 -m http.server 8080</code> in the card's folder, then browse to <code style="font-size:11px;background:rgba(0,0,0,0.08);padding:1px 5px;border-radius:3px;">http://localhost:8080</code>.</span>
+    <strong style="color:var(--accent-amber);">⚠ Local file mode</strong> — this card is open from <code style="font-size:11px;background:rgba(0,0,0,0.08);padding:1px 5px;border-radius:3px;">file://</code>. Weather uses AWC directly (no token needed) but Chrome may block cross-origin requests. NOTAMs use aviationapi.com which is CORS-enabled. For reliable results, serve locally or use the hosted version.<br>
+    <span style="color:var(--text-secondary);">Hosted: <strong><a href="https://stevennolanjr-dev.github.io/mission-data-card/" target="_blank" rel="noopener" style="color:var(--accent-blue);">stevennolanjr-dev.github.io/mission-data-card</a></strong> (AVWX token required for METAR/TAF) &nbsp;|&nbsp; Local server: <code style="font-size:11px;background:rgba(0,0,0,0.08);padding:1px 5px;border-radius:3px;">python3 -m http.server 8080</code> in the card's folder → <code style="font-size:11px;background:rgba(0,0,0,0.08);padding:1px 5px;border-radius:3px;">http://localhost:8080</code></span>
   </div>
 
   <!-- API Keys -->
@@ -2491,10 +2504,8 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
   </div>
 </div><!-- end tab-perf -->
 
-<!-- ==============================
-     (TAC GK tab content above at tab-tacgk)
-     ============================== -->
-<div id="tab-tacgk-UNUSED" class="tab-panel" style="display:none!important;">
+<!-- tab-tacgk-UNUSED removed (legacy panel, P0 cleanup) -->
+<div id="tab-tacgk-UNUSED" class="tab-panel" style="display:none!important;visibility:hidden;pointer-events:none;position:absolute;left:-9999px;">
   <div class="perf-grid">
     <div class="card" style="grid-column:1/-1;">
       <div class="card-header" style="border-left-color:var(--accent-purple);">
@@ -2763,6 +2774,12 @@ function initDark() {
     document.documentElement.classList.add('dark');
     document.getElementById('dark-btn').textContent = '☀';
   }
+}
+
+// ===== UTILITY =====
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // ===== PERSONAL CONFIG — paste tokens here once =====
@@ -3164,6 +3181,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   // Initialize DAIP links in case ICAOs were pre-filled
   updateDaipLinks();
+  // Keep tab-bar sticky top in sync with real header height
+  function syncTabBarTop() {
+    const hdr = document.querySelector('.header-bar');
+    const bar = document.querySelector('.tab-bar');
+    if (hdr && bar) bar.style.top = hdr.offsetHeight + 'px';
+  }
+  syncTabBarTop();
+  new ResizeObserver(syncTabBarTop).observe(document.querySelector('.header-bar'));
 });
 
 // ===== EDIT MODE =====
@@ -3453,17 +3478,23 @@ function renderTrackList() {
     container.innerHTML = '<div class="track-empty-msg">No tracks yet — click + New Track</div>';
     return;
   }
-  container.innerHTML = tracks.map(t => `
-    <div class="track-item ${selectedTrackId===t.id?'selected':''}" onclick="selectTrack('${t.id}')">
-      <div class="track-item-id">${t.id}</div>
+  container.innerHTML = tracks.map(t => {
+    const eid = escapeHtml(t.id);
+    const eCallsign = escapeHtml(t.callsign);
+    const eTanker = escapeHtml(t.tankerType);
+    const eSnip = escapeHtml([t.trackAlt,t.arSpeed].filter(Boolean).join(' · '));
+    const selClass = selectedTrackId===t.id ? 'selected' : '';
+    const badgeClass = t.tankerType==='KC-46' ? 'kc46' : t.tankerType==='KC-135' ? 'kc135' : 'other';
+    return `<div class="track-item ${selClass}" onclick="selectTrack(${JSON.stringify(t.id)})">
+      <div class="track-item-id">${eid}</div>
       <div class="track-item-meta">
-        <span class="tbadge ${t.tankerType==='KC-46'?'kc46':t.tankerType==='KC-135'?'kc135':'other'}">${t.tankerType||'—'}</span>
-        ${t.callsign||''}
+        <span class="tbadge ${badgeClass}">${eTanker||'—'}</span>
+        ${eCallsign}
       </div>
-      <div class="track-item-snip">${[t.trackAlt,t.arSpeed].filter(Boolean).join(' · ')}</div>
-      <button class="track-use-btn" onclick="useTrackInMission('${t.id}');event.stopPropagation()">Use</button>
-    </div>
-  `).join('');
+      <div class="track-item-snip">${eSnip}</div>
+      <button class="track-use-btn" onclick="useTrackInMission(${JSON.stringify(t.id)});event.stopPropagation()">Use</button>
+    </div>`;
+  }).join('');
 }
 
 function selectTrack(id) {
@@ -3611,16 +3642,20 @@ function renderRefsGallery() {
     container.innerHTML = '<div class="refs-empty">No images yet — tap Add Image to upload charts, plates, or diagrams</div>';
     return;
   }
-  container.innerHTML = filtered.map((img,i) => `
-    <div class="refs-card" onclick="openLightbox(${JSON.stringify(filtered).replace(/"/g,'&quot;')},${i})">
-      <img class="refs-thumb" src="${img.data}" alt="${img.title||''}" loading="lazy">
+  container.innerHTML = filtered.map((img,i) => {
+    const eTitle = escapeHtml(img.title || 'Untitled');
+    const eCat = escapeHtml(img.category);
+    const catClass = escapeHtml(img.category);
+    const lbData = JSON.stringify(filtered).replace(/"/g,'&quot;');
+    return `<div class="refs-card" onclick="openLightbox(${lbData},${i})">
+      <img class="refs-thumb" src="${img.data}" alt="${eTitle}" loading="lazy">
       <div class="refs-footer">
-        <span class="refs-card-title">${img.title||'Untitled'}</span>
-        <span class="cat-badge cat-${img.category}">${img.category}</span>
+        <span class="refs-card-title">${eTitle}</span>
+        <span class="cat-badge cat-${catClass}">${eCat}</span>
       </div>
-      <button class="refs-del-btn" onclick="deleteRef('${img.key}');event.stopPropagation()">×</button>
-    </div>
-  `).join('');
+      <button class="refs-del-btn" onclick="deleteRef(${JSON.stringify(img.key)});event.stopPropagation()">×</button>
+    </div>`;
+  }).join('');
 }
 
 async function handleRefsUpload(event) {
