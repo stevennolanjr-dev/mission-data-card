@@ -505,6 +505,102 @@ a { color:var(--accent-blue); }
 }
 .bs-add-bar { padding:6px 12px; }
 
+/* ===== MSN BRIEFING AID ===== */
+.msn-empty-state {
+  text-align:center; padding:60px 20px;
+  color:var(--text-dim);
+}
+.msn-empty-state strong { color:var(--text-secondary); }
+
+.msn-subtab-bar {
+  display:flex; flex-wrap:wrap; gap:4px;
+  padding-bottom:0; margin-bottom:14px;
+  border-bottom:1px solid var(--card-border);
+}
+.msn-stab {
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--card-border);
+  border-bottom:2px solid transparent;
+  border-radius:6px 6px 0 0;
+  color:var(--text-dim); font-size:11px; font-weight:600;
+  padding:6px 12px; cursor:pointer; white-space:nowrap;
+  display:flex; align-items:center; gap:6px;
+  transition:color 0.15s, background 0.15s;
+  margin-bottom:-1px;
+}
+.msn-stab:hover { background:rgba(255,255,255,0.07); color:var(--text-secondary); }
+.msn-stab.active {
+  background:var(--card-bg); color:var(--text-primary);
+  border-color:var(--card-border); border-bottom-color:var(--accent-teal);
+}
+.msn-stab-dot {
+  width:7px; height:7px; border-radius:50%; flex-shrink:0;
+}
+
+.msn-brief-panel {
+  display:grid; grid-template-columns:54% 1fr; gap:12px; min-height:420px;
+}
+@media (max-width:760px) { .msn-brief-panel { grid-template-columns:1fr; } }
+
+.msn-brief-left, .msn-brief-right {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:12px; padding:14px; overflow-y:auto;
+}
+.msn-brief-right {
+  display:flex; flex-direction:column; gap:8px;
+}
+
+.msn-sect { margin-bottom:12px; }
+.msn-sect-title {
+  font-size:10px; font-weight:700; letter-spacing:0.08em;
+  text-transform:uppercase; color:var(--accent-teal);
+  margin-bottom:5px; padding-bottom:3px;
+  border-bottom:1px solid var(--card-border);
+}
+.msn-row {
+  display:flex; gap:8px; padding:2px 0;
+  font-size:12px; line-height:1.45; align-items:baseline;
+}
+.msn-lbl {
+  color:var(--text-dim); font-size:11px; min-width:90px; flex-shrink:0;
+}
+.msn-val { color:var(--text-primary); font-weight:500; }
+.msn-val strong { font-weight:700; }
+.msn-val em { color:var(--text-dim); font-style:normal; font-size:11px; }
+
+.msn-generic-header {
+  padding:8px 10px; border-radius:6px;
+  margin-bottom:10px; border-left:3px solid #4a7090;
+}
+.msn-generic-title {
+  font-size:13px; font-weight:700; color:var(--text-primary);
+}
+.msn-generic-items { padding:4px 0; }
+.msn-generic-items li {
+  font-size:12px; color:var(--text-secondary);
+  padding:2px 0; line-height:1.45;
+}
+
+.msn-img-slot {
+  flex:1; display:flex; flex-direction:column; gap:6px;
+}
+.msn-img-slot img {
+  width:100%; border-radius:6px;
+  cursor:pointer; transition:opacity 0.15s;
+}
+.msn-img-slot img:hover { opacity:0.88; }
+.msn-img-placeholder {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  border:1.5px dashed var(--card-border);
+  border-radius:8px; padding:20px; text-align:center;
+  color:var(--text-dim); font-size:12px; gap:8px; min-height:160px;
+}
+.msn-img-placeholder a {
+  color:var(--accent-blue); text-decoration:none; font-size:11px;
+}
+.msn-img-placeholder a:hover { text-decoration:underline; }
+
 /* ===== WX TAB ===== */
 .wx-input-row {
   background:var(--card-bg);
@@ -1522,162 +1618,24 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
      TAB 3: MSN
      ============================== -->
 <div id="tab-msn" class="tab-panel">
-  <div class="grid-3col">
 
-    <!-- Low Level Card — full row -->
-    <div class="card full-row">
-      <div class="card-header green">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.09-.44c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.5 16"/></svg>
-        Low Level
-      </div>
-      <div class="card-body" style="padding:0;">
-        <div class="msn-item">Descent Check</div>
-        <div class="msn-item">Combat Entry</div>
-        <div class="msn-item">
-          Saber Check In
-          <div class="msn-sub">Auth (AMC E)</div>
-        </div>
-        <div class="msn-item">
-          PFARTTS 51
-          <div class="msn-sub">FPLANx3</div>
-          <div class="msn-sub">FIX TOT</div>
-          <div class="msn-sub">AFCS</div>
-          <div class="msn-sub">TALK / TAZ / GRP</div>
-          <div class="msn-sub">Squawk / Speed UP</div>
-        </div>
-        <div class="msn-item">Approach Check</div>
-        <div class="msn-item">
-          Hack / Squawk / Talk
-          <div class="msn-sub">Speed Limits</div>
-          <div class="msn-sub">Set Escape freq</div>
-        </div>
-        <div class="msn-item">Threat Plot Reaction @ C1</div>
-        <div class="msn-item">LZ Check-In</div>
-        <div class="msn-item">Request Rancher R out</div>
-        <div class="msn-item">
-          Slow Down
-          <div class="msn-sub">Clb left turn</div>
-          <div class="msn-sub">4500'</div>
-        </div>
-        <div class="msn-item">Combat Exit</div>
-      </div>
+  <!-- Empty state -->
+  <div id="msn-empty" class="msn-empty-state">
+    <div style="font-size:2.5rem;margin-bottom:12px;opacity:0.25;">✈</div>
+    <div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">No mission events</div>
+    <div style="font-size:12px;color:var(--text-dim);line-height:1.7;">
+      Add events in the <strong>BRIEF</strong> tab → Mission Profile.<br>
+      Each event gets its own briefing sub-tab here —<br>
+      brief guide on the left, chart graphic on the right.
     </div>
-
-    <!-- Air Refueling Card — 2 col -->
-    <div class="card" style="grid-column: span 2;">
-      <div class="card-header" style="border-left-color:var(--accent-teal);">
-        <svg class="icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        Air Refueling
-      </div>
-      <div class="card-body">
-        <div class="ar-reminder"><strong>Reminders:</strong> After Takeoff/Climb Check &nbsp;·&nbsp; Cruise Check</div>
-
-        <div class="msn-section-title">Three Rs (30 min prior)</div>
-        <div class="three-rs-row">
-          <div class="three-rs-item"><span class="three-rs-letter">R</span><span>RZ Checklists — 30 min prior CT ‖ NLT IP</span></div>
-          <div class="three-rs-item"><span class="three-rs-letter">R</span><span>Radios — AR Prim 30 prior ‖ TACAN ‖ Call NLT 15 prior</span></div>
-          <div class="three-rs-item"><span class="three-rs-letter">R</span><span>Radar</span></div>
-        </div>
-
-        <div class="msn-section-title">Three Cs (15 min prior)</div>
-        <div class="three-rs-row">
-          <div class="three-rs-item" style="border-left-color:var(--accent-blue);"><span class="three-rs-letter" style="color:var(--accent-blue);">C</span><span>Cleared Refueling Block</span></div>
-          <div class="three-rs-item" style="border-left-color:var(--accent-blue);"><span class="three-rs-letter" style="color:var(--accent-blue);">C</span><span>Cleared to Conduct AR (MARSA declared)</span></div>
-          <div class="three-rs-item" style="border-left-color:var(--accent-blue);"><span class="three-rs-letter" style="color:var(--accent-blue);">C</span><span>Cleared to AAR Freq</span></div>
-        </div>
-
-        <div class="msn-section-title">EMCON</div>
-        <div class="ar-req-row" style="border-left-color:var(--accent-red);">
-          <span class="ar-req-time" style="color:var(--accent-red);">EMCON 1</span>
-          <span>All calls made</span>
-        </div>
-
-        <div class="msn-section-title">Requirements</div>
-        <div class="ar-req-row">
-          <span class="ar-req-time">30 min</span>
-          <span>3 Rs — Monitor AR freq 30 prior (−1 p2158), Beacon set 30 prior</span>
-        </div>
-        <div class="ar-req-row">
-          <span class="ar-req-time">15 min</span>
-          <span>4 Cs</span>
-        </div>
-
-        <div class="msn-section-title" style="margin-top:6px;">RZ Procedures</div>
-        <div style="font-size:12px;color:var(--text-dim);padding:4px 0 0 8px;font-style:italic;">See AR GK tab for full procedures</div>
-      </div>
-    </div>
-
-    <!-- AR Altitude Calculator Card — 1 col -->
-    <div class="card">
-      <div class="card-header amber">
-        <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        C-17 AR Max Altitude
-      </div>
-      <div class="card-body">
-
-        <!-- Inputs -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-          <div class="tf-field" style="margin:0;">
-            <label class="tf-lbl">Tanker</label>
-            <select class="tf-in" id="arc-tanker" onchange="arcSyncFromSelect();arcCalc()">
-              <option value="KC135">KC-135</option>
-              <option value="KC46">KC-46</option>
-            </select>
-          </div>
-          <div class="tf-field" style="margin:0;">
-            <label class="tf-lbl" id="arc-kgw-lbl">Tanker EOR GW (×1k lb)</label>
-            <input class="tf-in" id="arc-kgw" type="number" step="1" value="150" oninput="arcCalc()">
-          </div>
-        </div>
-        <div class="tf-field" style="margin:0 0 10px;">
-          <label class="tf-lbl">C-17 Gross Weight (×1k lb) — range 410–585</label>
-          <input class="tf-in" id="arc-c17gw" type="number" min="410" max="585" step="1" value="550" oninput="arcCalc()">
-        </div>
-
-        <!-- Result display -->
-        <div style="display:flex;align-items:baseline;gap:10px;padding:6px 0 2px;">
-          <div id="arc-result" style="font-size:2.8rem;font-weight:800;letter-spacing:-0.04em;line-height:1;color:var(--text-primary);">--</div>
-          <div style="font-size:13px;color:var(--text-dim);">ft max PA</div>
-        </div>
-        <div id="arc-status" style="font-size:11px;line-height:1.45;min-height:1.5em;margin-bottom:6px;"></div>
-        <div class="table-note" style="margin-bottom:12px;">
-          Derived from TO 1-C17A-1-1 §7 charts — piecewise linear interpolation.
-          Drag index and ΔT not modeled (marginal effect on PA) — reference charts when result is close to a limit.
-          No extrapolation above 32,000 ft.
-        </div>
-
-        <!-- Airspeed tables (unchanged) -->
-        <div class="card-section-title">Tanker Airspeed Schedule</div>
-        <table class="ar-table" style="margin-bottom:4px;">
-          <thead>
-            <tr><th>Fwd Range</th><th>Slant Range</th><th>Accelerate To</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>&gt;6 NM</td><td>&gt;10 NM</td><td>340 KCAS</td></tr>
-            <tr><td>5–6 NM</td><td>8–10 NM</td><td>320 KCAS</td></tr>
-            <tr><td>4–5 NM</td><td>6–8 NM</td><td>Maintain 310 KCAS</td></tr>
-            <tr><td class="red-cell">&lt;4 NM</td><td class="red-cell">&lt;6 NM</td><td class="red-cell">Anticipate overrun</td></tr>
-          </tbody>
-        </table>
-
-        <div class="card-section-title" style="margin-top:10px;">Speed Schedule After Tanker Roll Out</div>
-        <table class="ar-table">
-          <thead>
-            <tr><th>Dist</th><th>KC-46</th><th>KC-135</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>&gt;3 NM</td><td colspan="2" style="text-align:center;">340 KCAS / .82M</td></tr>
-            <tr><td>3 NM</td><td colspan="2" style="text-align:center;">310 KCAS / .80M</td></tr>
-            <tr><td>2 NM</td><td colspan="2" style="text-align:center;">310 KCAS / .80M</td></tr>
-            <tr><td>1 NM</td><td>295 KCAS / .78M</td><td>285 KCAS / .78M</td></tr>
-            <tr><td>½ NM</td><td>285 KCAS / .78M</td><td>275 KCAS / .78M</td></tr>
-            <tr><td class="highlight">CONTACT</td><td>275 KCAS as briefed</td><td>265 KCAS as briefed</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
   </div>
+
+  <!-- Sub-tab bar (shown when events exist) -->
+  <div id="msn-subtab-bar" class="msn-subtab-bar" style="display:none;"></div>
+
+  <!-- Brief panels (shown when events exist) -->
+  <div id="msn-panels" style="display:none;"></div>
+
 </div><!-- end tab-msn -->
 
 
@@ -1982,6 +1940,92 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
      ============================== -->
 <div id="tab-argk" class="tab-panel">
   <div class="grid-3col">
+    <!-- AR Overview (moved from MSN tab) -->
+    <div class="card" style="grid-column: span 2;">
+      <div class="card-header" style="border-left-color:var(--accent-teal);">
+        <svg class="icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Air Refueling — Requirements &amp; Procedures
+      </div>
+      <div class="card-body">
+        <div class="ar-reminder"><strong>Reminders:</strong> After Takeoff/Climb Check &nbsp;·&nbsp; Cruise Check</div>
+        <div class="msn-section-title">Three Rs (30 min prior)</div>
+        <div class="three-rs-row">
+          <div class="three-rs-item"><span class="three-rs-letter">R</span><span>RZ Checklists — 30 min prior CT ‖ NLT IP</span></div>
+          <div class="three-rs-item"><span class="three-rs-letter">R</span><span>Radios — AR Prim 30 prior ‖ TACAN ‖ Call NLT 15 prior</span></div>
+          <div class="three-rs-item"><span class="three-rs-letter">R</span><span>Radar</span></div>
+        </div>
+        <div class="msn-section-title">Three Cs (15 min prior)</div>
+        <div class="three-rs-row">
+          <div class="three-rs-item" style="border-left-color:var(--accent-blue);"><span class="three-rs-letter" style="color:var(--accent-blue);">C</span><span>Cleared Refueling Block</span></div>
+          <div class="three-rs-item" style="border-left-color:var(--accent-blue);"><span class="three-rs-letter" style="color:var(--accent-blue);">C</span><span>Cleared to Conduct AR (MARSA declared)</span></div>
+          <div class="three-rs-item" style="border-left-color:var(--accent-blue);"><span class="three-rs-letter" style="color:var(--accent-blue);">C</span><span>Cleared to AAR Freq</span></div>
+        </div>
+        <div class="msn-section-title">EMCON</div>
+        <div class="ar-req-row" style="border-left-color:var(--accent-red);">
+          <span class="ar-req-time" style="color:var(--accent-red);">EMCON 1</span>
+          <span>All calls made</span>
+        </div>
+        <div class="msn-section-title">Requirements</div>
+        <div class="ar-req-row"><span class="ar-req-time">30 min</span><span>3 Rs — Monitor AR freq 30 prior (−1 p2158), Beacon set 30 prior</span></div>
+        <div class="ar-req-row"><span class="ar-req-time">15 min</span><span>4 Cs</span></div>
+      </div>
+    </div>
+
+    <!-- AR Altitude Calculator (moved from MSN tab) -->
+    <div class="card">
+      <div class="card-header amber">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        C-17 AR Max Altitude
+      </div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div class="tf-field" style="margin:0;">
+            <label class="tf-lbl">Tanker</label>
+            <select class="tf-in" id="arc-tanker" onchange="arcSyncFromSelect();arcCalc()">
+              <option value="KC135">KC-135</option>
+              <option value="KC46">KC-46</option>
+            </select>
+          </div>
+          <div class="tf-field" style="margin:0;">
+            <label class="tf-lbl" id="arc-kgw-lbl">Tanker EOR GW (×1k lb)</label>
+            <input class="tf-in" id="arc-kgw" type="number" step="1" value="150" oninput="arcCalc()">
+          </div>
+        </div>
+        <div class="tf-field" style="margin:0 0 10px;">
+          <label class="tf-lbl">C-17 GW (×1k lb) — range 410–585</label>
+          <input class="tf-in" id="arc-c17gw" type="number" min="410" max="585" step="1" value="550" oninput="arcCalc()">
+        </div>
+        <div style="display:flex;align-items:baseline;gap:10px;padding:6px 0 2px;">
+          <div id="arc-result" style="font-size:2.8rem;font-weight:800;letter-spacing:-0.04em;line-height:1;color:var(--text-primary);">--</div>
+          <div style="font-size:13px;color:var(--text-dim);">ft max PA</div>
+        </div>
+        <div id="arc-status" style="font-size:11px;line-height:1.45;min-height:1.5em;margin-bottom:6px;"></div>
+        <div class="table-note" style="margin-bottom:12px;">Derived from TO 1-C17A-1-1 §7 · Drag index and ΔT not modeled — reference charts when close to limit. No extrapolation above 32K ft.</div>
+        <div class="card-section-title">Tanker Airspeed Schedule</div>
+        <table class="ar-table" style="margin-bottom:4px;">
+          <thead><tr><th>Fwd Range</th><th>Slant Range</th><th>Accelerate To</th></tr></thead>
+          <tbody>
+            <tr><td>&gt;6 NM</td><td>&gt;10 NM</td><td>340 KCAS</td></tr>
+            <tr><td>5–6 NM</td><td>8–10 NM</td><td>320 KCAS</td></tr>
+            <tr><td>4–5 NM</td><td>6–8 NM</td><td>Maintain 310 KCAS</td></tr>
+            <tr><td class="red-cell">&lt;4 NM</td><td class="red-cell">&lt;6 NM</td><td class="red-cell">Anticipate overrun</td></tr>
+          </tbody>
+        </table>
+        <div class="card-section-title" style="margin-top:10px;">Speed Schedule After Roll Out</div>
+        <table class="ar-table">
+          <thead><tr><th>Dist</th><th>KC-46</th><th>KC-135</th></tr></thead>
+          <tbody>
+            <tr><td>&gt;3 NM</td><td colspan="2" style="text-align:center;">340 KCAS / .82M</td></tr>
+            <tr><td>3 NM</td><td colspan="2" style="text-align:center;">310 KCAS / .80M</td></tr>
+            <tr><td>2 NM</td><td colspan="2" style="text-align:center;">310 KCAS / .80M</td></tr>
+            <tr><td>1 NM</td><td>295 KCAS / .78M</td><td>285 KCAS / .78M</td></tr>
+            <tr><td>½ NM</td><td>285 KCAS / .78M</td><td>275 KCAS / .78M</td></tr>
+            <tr><td class="highlight">CONTACT</td><td>275 KCAS as briefed</td><td>265 KCAS as briefed</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header" style="border-left-color:var(--accent-teal);">
         <svg class="icon" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -2302,6 +2346,40 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
 
       </div>
     </div>
+
+    <!-- Low Level GK (moved from MSN tab) -->
+    <div class="card full-row" style="margin-top:0;">
+      <div class="card-header green">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.09-.44c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.5 16"/></svg>
+        Low Level — Sequence
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="msn-item">Descent Check</div>
+        <div class="msn-item">Combat Entry</div>
+        <div class="msn-item">Saber Check In <div class="msn-sub">Auth (AMC E)</div></div>
+        <div class="msn-item">PFARTTS 51
+          <div class="msn-sub">FPLANx3</div>
+          <div class="msn-sub">FIX TOT</div>
+          <div class="msn-sub">AFCS</div>
+          <div class="msn-sub">TALK / TAZ / GRP</div>
+          <div class="msn-sub">Squawk / Speed UP</div>
+        </div>
+        <div class="msn-item">Approach Check</div>
+        <div class="msn-item">Hack / Squawk / Talk
+          <div class="msn-sub">Speed Limits</div>
+          <div class="msn-sub">Set Escape freq</div>
+        </div>
+        <div class="msn-item">Threat Plot Reaction @ C1</div>
+        <div class="msn-item">LZ Check-In</div>
+        <div class="msn-item">Request Rancher R out</div>
+        <div class="msn-item">Slow Down
+          <div class="msn-sub">Clb left turn</div>
+          <div class="msn-sub">4500'</div>
+        </div>
+        <div class="msn-item">Combat Exit</div>
+      </div>
+    </div>
+
   </div>
 </div><!-- end tab-tacgk -->
 
@@ -2975,7 +3053,7 @@ function populateFields(p) {
   if (p.wxAlt1) { const el=document.getElementById('wx-alt1'); if(el) el.value=p.wxAlt1; }
   if (p.wxAlt2) { const el=document.getElementById('wx-alt2'); if(el) el.value=p.wxAlt2; }
   if (p.wxAlt3) { const el=document.getElementById('wx-alt3'); if(el) el.value=p.wxAlt3; }
-  if (Array.isArray(p.missionEvents)) { _missionEvents = p.missionEvents; renderMissionProfile(); }
+  if (Array.isArray(p.missionEvents)) { _missionEvents = p.missionEvents; renderMissionProfile(); renderMsnTab(); }
   if (Array.isArray(p.boxSteps)) { _boxSteps = p.boxSteps; renderBoxSetup(); }
   updateDaipLinks();
 }
@@ -3076,6 +3154,7 @@ function mpUpdateItem(idx, iIdx, val) {
 function mpRemoveEvent(idx) {
   _missionEvents.splice(idx, 1);
   renderMissionProfile();
+  renderMsnTab();
 }
 function mpAddItem(idx) {
   if (!_missionEvents[idx]) return;
@@ -3122,6 +3201,7 @@ function showAddEventMenu(e) {
 function mpAddEvent(et) {
   _missionEvents.push({ type: et.type, title: et.label, color: et.color, items: [] });
   renderMissionProfile();
+  renderMsnTab();
   // Focus title of new event
   const evDivs = document.querySelectorAll('#mission-profile-body .mp-event-title');
   if (evDivs.length) {
@@ -3152,8 +3232,9 @@ function addArEventToMission(trackId, track) {
   if (arip)   items.push('ARIP: ' + arip);
   if (exit)   items.push('Exit: ' + exit);
   if (spd)    items.push('AR speed: ' + spd);
-  _missionEvents.push({ type:'ar', title, color:'#0d8c68', items });
+  _missionEvents.push({ type:'ar', title, color:'#0d8c68', items, trackId: trackId, trackData: Object.assign({}, track) });
   renderMissionProfile();
+  renderMsnTab();
   showToast('AR track ' + trackId + ' added to Mission Profile');
 }
 
@@ -3955,9 +4036,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (di && !di.value) di.value = dateStr;
   // Restore saved content
   loadContent();
-  // Init Mission Profile and Box Setup
+  // Init Mission Profile, Box Setup, and MSN briefing aid
   renderMissionProfile();
   renderBoxSetup();
+  renderMsnTab();
   // Init AR altitude calculator
   arcSyncFromSelect();
   arcCalc();
@@ -5323,6 +5405,177 @@ function calcOverhead() {
   if (tm) tm.innerHTML =
     timingCard('Pattern Time · Overhead (excl decel)', rows, 'MANEUVER', total, 'var(--accent-amber)') +
     '<div style="font-size:10px;color:var(--text-dim);margin-top:6px;padding:6px 8px;background:rgba(251,146,60,0.08);border-radius:6px;border-left:2px solid var(--accent-amber);">⚠ DW time uses Vapp GS — actual longer due to decel from '+gs+' kt. Use PERF Decel Calc for slowdown time.</div>';
+}
+
+// ===== MSN BRIEFING AID =====
+let _activeMsnTab = 0;
+
+function renderMsnTab() {
+  const bar    = document.getElementById('msn-subtab-bar');
+  const panels = document.getElementById('msn-panels');
+  const empty  = document.getElementById('msn-empty');
+  if (!bar || !panels || !empty) return;
+
+  if (!_missionEvents.length) {
+    empty.style.display  = 'block';
+    bar.style.display    = 'none';
+    panels.style.display = 'none';
+    return;
+  }
+  empty.style.display  = 'none';
+  bar.style.display    = 'flex';
+  panels.style.display = 'block';
+
+  if (_activeMsnTab >= _missionEvents.length) _activeMsnTab = 0;
+
+  // Sub-tab buttons
+  bar.innerHTML = _missionEvents.map((ev, idx) => `
+    <button class="msn-stab${idx === _activeMsnTab ? ' active' : ''}"
+            onclick="selectMsnSubTab(${idx})">
+      <span class="msn-stab-dot" style="background:${ev.color||'#4a7090'}"></span>
+      ${escapeHtml(ev.title)}
+    </button>
+  `).join('');
+
+  // Panels
+  panels.innerHTML = _missionEvents.map((ev, idx) => `
+    <div id="msn-panel-${idx}" style="display:${idx===_activeMsnTab?'grid':'none'};" class="msn-brief-panel">
+      <div class="msn-brief-left">${ev.type==='ar' ? buildArBriefHtml(ev) : buildGenericBriefHtml(ev)}</div>
+      <div class="msn-brief-right" id="msn-img-pane-${idx}">${buildImgPlaceholder(ev)}</div>
+    </div>
+  `).join('');
+
+  // Async: load images for active panel
+  loadMsnImages(_activeMsnTab);
+}
+
+function selectMsnSubTab(idx) {
+  _activeMsnTab = idx;
+  // Update button states
+  document.querySelectorAll('.msn-stab').forEach((b,i) => b.classList.toggle('active', i===idx));
+  // Show/hide panels
+  _missionEvents.forEach((_,i) => {
+    const p = document.getElementById('msn-panel-'+i);
+    if (p) p.style.display = i===idx ? 'grid' : 'none';
+  });
+  loadMsnImages(idx);
+}
+
+function buildArBriefHtml(ev) {
+  const t = ev.trackData || {};
+  const row = (lbl, val, bold) => val
+    ? `<div class="msn-row"><span class="msn-lbl">${lbl}</span><span class="msn-val">${bold?'<strong>'+escapeHtml(val)+'</strong>':escapeHtml(val)}</span></div>`
+    : '';
+  const sect = (title, content) => `<div class="msn-sect"><div class="msn-sect-title">${title}</div>${content}</div>`;
+
+  // Resolve fields from either saved track format or AP/1B format
+  const trackId   = ev.trackId || '';
+  const dirs      = t.directions || '';
+  const tanker    = [t.tankerType, t.callsign].filter(Boolean).join(' — ') || '';
+  const rv        = t.rvType ? `${t.rvType}${t.rvType==='Alpha'?' — Anchor':t.rvType==='Delta'?' — Point Parallel':t.rvType==='Golf'?' — Enroute / IP':''}` : '';
+  const alt       = t.trackAlt || t.alt_block || '';
+  const freq1     = t.freq || t.freq_primary || '';
+  const freq2     = t.freq_secondary || '';
+  const tacanTnkr = t.tacan || t.tacan_tanker || '';
+  const tacanRcvr = t.tacan_receiver || '';
+  const arip      = t.arcpFix || t.arip_navaid || '';
+  const exit      = t.exitFix || t.exit_navaid || '';
+  const arcp      = t.arcp_navaid || '';
+  const speed     = t.arSpeed || '';
+  const artcc     = t.artcc || '';
+  const dsn       = t.dsn || '';
+  const schedUnit = t.scheduling_unit || '';
+  const notes     = (ev.items||[]).join(' · ');
+
+  return `
+    ${sect('Identification',
+      row('Track', trackId + (dirs?' · '+dirs:''), true) +
+      (t.coordinates ? row('Coordinates', t.coordinates) : '')
+    )}
+    ${sect('Tanker',
+      row('Type / Callsign', tanker, true) +
+      row('RV Type', rv) +
+      row('AR Speed', speed)
+    )}
+    ${sect('Altitudes', row('Block', alt, true))}
+    ${sect('Communications',
+      row('Primary Freq', freq1, true) +
+      row('Secondary Freq', freq2) +
+      row('TACAN (Tanker)', tacanTnkr) +
+      row('TACAN (Rcvr)', tacanRcvr)
+    )}
+    ${sect('Points',
+      row('ARIP', arip, true) +
+      (arcp ? row('ARCP', arcp) : '') +
+      row('Exit', exit, true)
+    )}
+    ${sect('Control',
+      row('ARTCC', artcc) +
+      row('Scheduling', schedUnit) +
+      row('DSN', dsn)
+    )}
+    ${sect('Timing',
+      '<div class="msn-row"><span class="msn-lbl">3 Rs</span><span class="msn-val" style="color:var(--text-dim);">ARCT − 30 min</span></div>' +
+      '<div class="msn-row"><span class="msn-lbl">3 Cs</span><span class="msn-val" style="color:var(--text-dim);">ARCT − 15 min</span></div>'
+    )}
+    ${notes ? sect('Notes / Contingencies', `<div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">${escapeHtml(notes)}</div>`) : ''}
+  `;
+}
+
+function buildGenericBriefHtml(ev) {
+  const items = (ev.items||[]).filter(Boolean);
+  return `
+    <div class="msn-generic-header" style="border-left-color:${ev.color||'#4a7090'};background:${ev.color||'#4a7090'}18;">
+      <div class="msn-generic-title">${escapeHtml(ev.title)}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:2px;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(ev.type||'event')}</div>
+    </div>
+    ${items.length
+      ? `<div class="msn-generic-items"><ul style="list-style:none;padding:0;margin:0;">${items.map(i=>`<li style="padding:3px 0 3px 12px;border-left:2px solid ${ev.color||'#4a7090'}30;margin-bottom:3px;font-size:12px;color:var(--text-secondary);">${escapeHtml(i)}</li>`).join('')}</ul></div>`
+      : `<div style="font-size:12px;color:var(--text-dim);font-style:italic;padding:8px 0;">No notes — add them in BRIEF → Mission Profile</div>`
+    }
+    <div style="margin-top:auto;padding-top:16px;font-size:11px;color:var(--text-dim);border-top:1px solid var(--card-border);">
+      Edit notes in <strong style="color:var(--text-secondary);">BRIEF</strong> tab → Mission Profile
+    </div>
+  `;
+}
+
+function buildImgPlaceholder(ev) {
+  const dest = ev.type==='ar' && ev.trackId
+    ? `onclick="switchTab('ardb',document.querySelector('[onclick*=\\'ardb\\']'));showToast('Navigate to AR DB → select ${escapeHtml(ev.trackId||'')} → attach chart image')"`
+    : '';
+  return `<div class="msn-img-placeholder" style="min-height:200px;">
+    <div style="font-size:1.8rem;opacity:0.3;">🗺</div>
+    <div style="font-size:12px;">No chart attached</div>
+    ${ev.type==='ar'&&ev.trackId
+      ? `<div style="font-size:11px;color:var(--text-dim);">Attach a chart image in <strong style="color:var(--text-secondary);">AR DB</strong> → select ${escapeHtml(ev.trackId)} → Add Chart Image</div>`
+      : `<div style="font-size:11px;color:var(--text-dim);">Chart images not yet supported for this event type</div>`
+    }
+  </div>`;
+}
+
+async function loadMsnImages(idx) {
+  const ev = _missionEvents[idx];
+  if (!ev || ev.type !== 'ar' || !ev.trackId) return;
+  const pane = document.getElementById('msn-img-pane-'+idx);
+  if (!pane) return;
+
+  // Find saved track to get imageKeys
+  const track = getTracks().find(t => t.id === ev.trackId);
+  if (!track || !track.imageKeys || !track.imageKeys.length) return; // placeholder stays
+
+  const imgs = [];
+  for (const key of track.imageKeys) {
+    try {
+      const file = await dbGet(key);
+      if (file) {
+        const url = URL.createObjectURL(file);
+        imgs.push(`<img src="${url}" alt="${escapeHtml(ev.trackId)} chart" onclick="openLightbox('${url}','${escapeHtml(ev.trackId)} chart')">`);
+      }
+    } catch(e) { /* skip */ }
+  }
+  if (imgs.length) {
+    pane.innerHTML = `<div class="msn-img-slot">${imgs.join('')}</div>`;
+  }
 }
 
 // ===== AR ALTITUDE CALCULATOR =====
