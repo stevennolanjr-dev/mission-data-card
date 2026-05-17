@@ -2220,6 +2220,14 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
 
       <!-- Right: Track Form -->
       <div class="ardb-right">
+
+        <!-- AP/1B Browse -->
+        <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;">
+          <select id="ap1b-select" class="tf-in" style="flex:1;font-size:12px;" onchange="selectAp1bTrack(this.value)" disabled>
+            <option value="">— Browse AP/1B tracks (loading…) —</option>
+          </select>
+        </div>
+
         <div id="track-form" class="track-form">
           <div class="card-header" style="margin-bottom:0;">Track Details</div>
           <div class="tf-grid">
@@ -4015,8 +4023,9 @@ async function loadAp1bData() {
     const bar = document.getElementById('ap1b-bar');
     const txt = document.getElementById('ap1b-bar-text');
     if (bar && txt) {
-      txt.textContent = `AP/1B loaded — ${_ap1bCache.total} CONUS AR tracks (cycle ${_ap1bCache.version}). Enter a Track ID and click ⬇ AP/1B to auto-fill.`;
+      txt.textContent = `AP/1B loaded — ${_ap1bCache.total} CONUS AR tracks (cycle ${_ap1bCache.version}). Browse or type a Track ID and click ⬇ AP/1B to auto-fill.`;
       bar.style.display = 'flex';
+      populateAp1bSelect(_ap1bCache);
     }
     return _ap1bCache;
   } catch(e) {
@@ -4095,7 +4104,42 @@ async function lookupAp1b() {
 }
 
 function clearAp1bBadge() {
-  // no-op placeholder — could clear a "loaded" indicator in the future
+  // no-op placeholder
+}
+
+function populateAp1bSelect(data) {
+  const sel = document.getElementById('ap1b-select');
+  if (!sel) return;
+
+  // Sort track IDs numerically (AR1, AR2, … AR999, AR1W, etc.)
+  const ids = Object.keys(data.tracks).sort((a, b) => {
+    const numA = parseInt(a.replace(/\D/g,'')) || 0;
+    const numB = parseInt(b.replace(/\D/g,'')) || 0;
+    if (numA !== numB) return numA - numB;
+    return a.localeCompare(b);
+  });
+
+  sel.innerHTML = '<option value="">— Browse AP/1B tracks —</option>'
+    + ids.map(id => {
+        const t = data.tracks[id];
+        const dir  = t.directions?.join('/') || '';
+        const alt  = t.alt_block || '';
+        const artcc = t.artcc ? ` · ${t.artcc}` : '';
+        const label = `${id}${dir ? ' ' + dir : ''}${alt ? ' · ' + alt : ''}${artcc}`;
+        return `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
+      }).join('');
+
+  sel.disabled = false;
+}
+
+function selectAp1bTrack(id) {
+  if (!id) return;
+  const idEl = document.getElementById('tf-id');
+  if (idEl) idEl.value = id;
+  lookupAp1b();
+  // Reset dropdown back to placeholder so it's clear what's loaded
+  const sel = document.getElementById('ap1b-select');
+  if (sel) sel.value = '';
 }
 
 function useTrackInMission(id) {
