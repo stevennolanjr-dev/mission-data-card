@@ -1482,7 +1482,7 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
     <div class="card full-row">
       <div class="card-header green">
         <svg class="icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.09-.44c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.5 16"/></svg>
-        Low Level — VR106
+        Low Level
       </div>
       <div class="card-body" style="padding:0;">
         <div class="msn-item">Descent Check</div>
@@ -1561,41 +1561,47 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
       </div>
     </div>
 
-    <!-- AR Altitude Table Card — 1 col -->
+    <!-- AR Altitude Calculator Card — 1 col -->
     <div class="card">
       <div class="card-header amber">
         <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        C-17 AR Altitude
+        C-17 AR Max Altitude
       </div>
       <div class="card-body">
-        <div style="font-size:10px;color:var(--text-dim);margin-bottom:6px;line-height:1.4;">Altitude (×1,000 ft) · Gross weight at end of refueling (1,000 lb) · +10°C deviation · Drag Index 7</div>
-        <table class="ar-table">
-          <thead>
-            <tr>
-              <th>Tanker</th>
-              <th>400k</th>
-              <th>450k</th>
-              <th>500k</th>
-              <th>550k</th>
-              <th>585k</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>KC-135</strong></td>
-              <td>—</td><td>—</td>
-              <td>30.2</td><td>27.6</td><td>25.5</td>
-            </tr>
-            <tr>
-              <td><strong>KC-46</strong></td>
-              <td>34.5</td><td>31.4</td>
-              <td>29.0</td><td>26.3</td><td>24.9</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="table-note">KC-135 GW 150,000 lb · KC-46 GW 260,000 lb · DRAG INDEX = 7 (LTA1 Turrets, MWS, CMDS)</div>
 
-        <div class="card-section-title" style="margin-top:10px;">Tanker Airspeed Schedule</div>
+        <!-- Inputs -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div class="tf-field" style="margin:0;">
+            <label class="tf-lbl">Tanker</label>
+            <select class="tf-in" id="arc-tanker" onchange="arcSyncFromSelect();arcCalc()">
+              <option value="KC135">KC-135</option>
+              <option value="KC46">KC-46</option>
+            </select>
+          </div>
+          <div class="tf-field" style="margin:0;">
+            <label class="tf-lbl" id="arc-kgw-lbl">Tanker EOR GW (×1k lb)</label>
+            <input class="tf-in" id="arc-kgw" type="number" step="1" value="150" oninput="arcCalc()">
+          </div>
+        </div>
+        <div class="tf-field" style="margin:0 0 10px;">
+          <label class="tf-lbl">C-17 Gross Weight (×1k lb) — range 410–585</label>
+          <input class="tf-in" id="arc-c17gw" type="number" min="410" max="585" step="1" value="550" oninput="arcCalc()">
+        </div>
+
+        <!-- Result display -->
+        <div style="display:flex;align-items:baseline;gap:10px;padding:6px 0 2px;">
+          <div id="arc-result" style="font-size:2.8rem;font-weight:800;letter-spacing:-0.04em;line-height:1;color:var(--text-primary);">--</div>
+          <div style="font-size:13px;color:var(--text-dim);">ft max PA</div>
+        </div>
+        <div id="arc-status" style="font-size:11px;line-height:1.45;min-height:1.5em;margin-bottom:6px;"></div>
+        <div class="table-note" style="margin-bottom:12px;">
+          Derived from TO 1-C17A-1-1 §7 charts — piecewise linear interpolation.
+          Drag index and ΔT not modeled (marginal effect on PA) — reference charts when result is close to a limit.
+          No extrapolation above 32,000 ft.
+        </div>
+
+        <!-- Airspeed tables (unchanged) -->
+        <div class="card-section-title">Tanker Airspeed Schedule</div>
         <table class="ar-table" style="margin-bottom:4px;">
           <thead>
             <tr><th>Fwd Range</th><th>Slant Range</th><th>Accelerate To</th></tr>
@@ -3906,6 +3912,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Init Mission Profile and Box Setup
   renderMissionProfile();
   renderBoxSetup();
+  // Init AR altitude calculator
+  arcSyncFromSelect();
+  arcCalc();
   // Init AR DB
   renderTrackList();
   // Init IndexedDB
@@ -4412,9 +4421,12 @@ function clearAp1bBadge() {
 function onTankerTypeChange() {
   const tt  = document.getElementById('tf-tankerType')?.value;
   const spd = document.getElementById('tf-arSpeed');
-  if (!spd || spd.value) return; // don't overwrite user-entered value
-  if (tt === 'KC-46')  spd.value = '275 KCAS';
-  if (tt === 'KC-135') spd.value = '265 KCAS';
+  if (spd && !spd.value) {
+    if (tt === 'KC-46')  spd.value = '275 KCAS';
+    if (tt === 'KC-135') spd.value = '265 KCAS';
+  }
+  // Sync altitude calculator
+  if (tt) arcSyncTanker(tt);
 }
 
 function onRvTypeChange() {
@@ -5266,6 +5278,142 @@ function calcOverhead() {
     timingCard('Pattern Time · Overhead (excl decel)', rows, 'MANEUVER', total, 'var(--accent-amber)') +
     '<div style="font-size:10px;color:var(--text-dim);margin-top:6px;padding:6px 8px;background:rgba(251,146,60,0.08);border-radius:6px;border-left:2px solid var(--accent-amber);">⚠ DW time uses Vapp GS — actual longer due to decel from '+gs+' kt. Use PERF Decel Calc for slowdown time.</div>';
 }
+
+// ===== AR ALTITUDE CALCULATOR =====
+// Derived from TO 1-C17A-1-1 Section 7 charts via piecewise-linear model.
+// Each curve maps C-17 GW (×1k lb) to max pressure altitude (×1k ft)
+// at a given tanker GW at end of refueling.
+const ARC_MODELS = {
+  KC135: {
+    name: 'KC-135',
+    curves: [150, 200, 250, 300],
+    default: 150,
+    data: {
+      300: [{ pa:32.0, c17:420 }, { pa:24.3, c17:527 }, { pa:22.8, c17:585 }],
+      250: [{ pa:32.0, c17:440 }, { pa:24.3, c17:550 }, { pa:23.5, c17:585 }],
+      200: [{ pa:32.0, c17:467 }, { pa:24.3, c17:575 }, { pa:24.0, c17:585 }],
+      150: [{ pa:32.0, c17:493 }, { pa:25.5, c17:585 }]
+    }
+  },
+  KC46: {
+    name: 'KC-46',
+    curves: [180, 260, 340, 420],
+    default: 260,
+    data: {
+      420: [{ pa:32.0, c17:410 }, { pa:24.0, c17:540 }, { pa:22.8, c17:585 }],
+      340: [{ pa:32.0, c17:438 }, { pa:24.0, c17:565 }, { pa:23.5, c17:585 }],
+      260: [{ pa:32.0, c17:466 }, { pa:24.7, c17:585 }],
+      180: [{ pa:32.0, c17:495 }, { pa:26.5, c17:585 }]
+    }
+  }
+};
+const ARC_C17_MIN = 410, ARC_C17_MAX = 585, ARC_PA_TOP = 32.0;
+
+function arcLerp(x, x0, x1, y0, y1) {
+  if (x0 === x1) return y0;
+  return y0 + (x - x0) * (y1 - y0) / (x1 - x0);
+}
+function arcBracket(val, arr) {
+  if (val <= arr[0]) return [arr[0], arr[0]];
+  if (val >= arr[arr.length-1]) return [arr[arr.length-1], arr[arr.length-1]];
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (val >= arr[i] && val <= arr[i+1]) return [arr[i], arr[i+1]];
+  }
+  return null;
+}
+function arcMaxC17ForCurve(pa, curve) {
+  if (pa > ARC_PA_TOP) return null;
+  const last = curve[curve.length - 1];
+  if (pa <= last.pa) return ARC_C17_MAX;
+  for (let i = 0; i < curve.length - 1; i++) {
+    const hi = curve[i], lo = curve[i+1];
+    if (pa <= hi.pa && pa >= lo.pa) return arcLerp(pa, lo.pa, hi.pa, lo.c17, hi.c17);
+  }
+  return null;
+}
+function arcMaxC17AtPa(pa, kcK, model) {
+  const bracket = arcBracket(kcK, model.curves);
+  if (!bracket) return null;
+  const [lo, hi] = bracket;
+  const loW = arcMaxC17ForCurve(pa, model.data[lo]);
+  const hiW = arcMaxC17ForCurve(pa, model.data[hi]);
+  if (loW === null || hiW === null) return null;
+  if (lo === hi) return loW;
+  return arcLerp(kcK, lo, hi, loW, hiW);
+}
+function arcSolve(c17K, kcK, model) {
+  if (!Number.isFinite(c17K) || !Number.isFinite(kcK)) return { ok:false, msg:'Enter both gross weights.' };
+  const cMin = model.curves[0], cMax = model.curves[model.curves.length-1];
+  if (c17K < ARC_C17_MIN || c17K > ARC_C17_MAX)
+    return { ok:false, msg:`C-17 GW must be ${ARC_C17_MIN}–${ARC_C17_MAX}.` };
+  if (kcK < cMin || kcK > cMax)
+    return { ok:false, msg:`${model.name} EOR GW must be ${cMin}–${cMax}.` };
+  const topAllowed = arcMaxC17AtPa(ARC_PA_TOP, kcK, model);
+  if (topAllowed === null) return { ok:false, msg:'Unable to evaluate — check inputs.' };
+  if (c17K <= topAllowed) {
+    return { ok:true, ft: ARC_PA_TOP * 1000, suffix:'+',
+      msg:`C-17 weight is lighter than the 32K PA chart boundary — actual max PA may be above 32,000 ft.` };
+  }
+  let lo = 0, hi = ARC_PA_TOP;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    const allowed = arcMaxC17AtPa(mid, kcK, model);
+    if (allowed !== null && allowed >= c17K) lo = mid; else hi = mid;
+  }
+  const bracket = arcBracket(kcK, model.curves);
+  const curveNote = bracket[0] === bracket[1]
+    ? `${model.name} ${bracket[0]}k curve`
+    : `${model.name} ${bracket[0]}k–${bracket[1]}k interpolated`;
+  return { ok:true, ft: Math.round(lo * 1000), suffix:'', msg:`${curveNote}. Chart-derived — drag index and ΔT not modeled.` };
+}
+
+function arcSyncFromSelect() {
+  const key = document.getElementById('arc-tanker')?.value;
+  const model = ARC_MODELS[key];
+  if (!model) return;
+  const kgw = document.getElementById('arc-kgw');
+  const lbl = document.getElementById('arc-kgw-lbl');
+  if (lbl) lbl.textContent = `${model.name} EOR GW (×1k lb) — ${model.curves[0]}–${model.curves[model.curves.length-1]}`;
+  if (kgw) {
+    kgw.min = model.curves[0];
+    kgw.max = model.curves[model.curves.length-1];
+    // Only reset if out of range for new model
+    const v = Number(kgw.value);
+    if (v < model.curves[0] || v > model.curves[model.curves.length-1]) kgw.value = model.default;
+  }
+}
+
+function arcCalc() {
+  const key = document.getElementById('arc-tanker')?.value || 'KC135';
+  const model = ARC_MODELS[key];
+  const c17K = Number(document.getElementById('arc-c17gw')?.value);
+  const kcK  = Number(document.getElementById('arc-kgw')?.value);
+  const result = arcSolve(c17K, kcK, model);
+  const resEl = document.getElementById('arc-result');
+  const statEl = document.getElementById('arc-status');
+  if (!result.ok) {
+    if (resEl) resEl.textContent = '--';
+    if (statEl) { statEl.textContent = result.msg; statEl.style.color = 'var(--accent-red,#e05555)'; }
+    return;
+  }
+  if (resEl) resEl.textContent = result.ft.toLocaleString() + (result.suffix || '');
+  if (statEl) {
+    statEl.textContent = result.msg;
+    statEl.style.color = result.suffix ? 'var(--accent-amber)' : 'var(--accent-teal)';
+  }
+}
+
+// Sync calculator tanker type when AR form tanker changes
+function arcSyncTanker(type) {
+  const sel = document.getElementById('arc-tanker');
+  if (!sel) return;
+  if (type === 'KC-46') sel.value = 'KC46';
+  else if (type === 'KC-135') sel.value = 'KC135';
+  arcSyncFromSelect();
+  arcCalc();
+}
+
+
 </script>
 </body>
 </html>
