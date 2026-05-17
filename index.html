@@ -404,6 +404,97 @@ a { color:var(--accent-blue); }
 }
 .key-points strong { color:var(--accent-blue); }
 
+/* ===== MISSION PROFILE (DYNAMIC) ===== */
+.mp-event { margin-bottom:6px; }
+.mp-event-header {
+  display:flex; align-items:center; gap:6px;
+  padding:4px 8px;
+  background:rgba(255,255,255,0.04);
+  border-radius:4px;
+  border-left:3px solid #4a7090;
+}
+.mp-event-title {
+  font-size:10px; font-weight:700; letter-spacing:0.06em;
+  text-transform:uppercase; flex:1;
+  color:var(--text-secondary);
+  min-height:14px; outline:none;
+  cursor:text;
+}
+.mp-event-title:focus { color:var(--text-primary); }
+.mp-event-items { padding:2px 8px 2px 14px; }
+.mp-item-row {
+  display:flex; align-items:flex-start; gap:4px;
+  padding:2px 0; font-size:12px; line-height:1.45;
+}
+.mp-bullet { color:var(--text-dim); margin-top:1px; flex-shrink:0; user-select:none; }
+.mp-item-text {
+  flex:1; color:var(--text-secondary); outline:none; min-height:1em; cursor:text;
+}
+.mp-item-text:focus { color:var(--text-primary); }
+.mp-icon-btn {
+  background:none; border:none; color:var(--text-dim);
+  cursor:pointer; padding:0 3px; font-size:11px;
+  opacity:0; transition:opacity 0.15s; flex-shrink:0;
+  line-height:1.45;
+}
+.mp-item-row:hover .mp-icon-btn,
+.mp-event-header:hover .mp-icon-btn { opacity:0.6; }
+.mp-icon-btn:hover { opacity:1 !important; color:#e05555; }
+.mp-add-item {
+  display:inline-block; font-size:11px;
+  color:var(--accent-blue); cursor:pointer;
+  opacity:0.5; padding:1px 0; margin-top:1px;
+  transition:opacity 0.15s;
+}
+.mp-add-item:hover { opacity:1; }
+.mp-empty {
+  text-align:center; color:var(--text-dim);
+  font-size:12px; font-style:italic; padding:18px 0;
+}
+
+/* Event type picker popup */
+.event-type-menu {
+  position:fixed; background:var(--card-bg);
+  border:1px solid var(--card-border); border-radius:8px;
+  padding:4px; z-index:1200; min-width:170px;
+  box-shadow:0 6px 24px rgba(0,0,0,0.5);
+}
+.event-type-menu button {
+  display:flex; align-items:center; gap:8px;
+  width:100%; text-align:left; background:none; border:none;
+  color:var(--text-primary); padding:6px 10px;
+  font-size:12px; cursor:pointer; border-radius:4px;
+}
+.event-type-menu button:hover { background:rgba(255,255,255,0.08); }
+.event-type-dot {
+  flex-shrink:0; width:8px; height:8px;
+  border-radius:50%; display:inline-block;
+}
+
+/* Box Setup dynamic steps */
+.bs-step-row {
+  display:flex; align-items:flex-start;
+  gap:8px; padding:7px 10px;
+  border-bottom:1px solid var(--card-border);
+}
+.bs-step-row:last-of-type { border-bottom:none; }
+.bs-step-num {
+  flex-shrink:0; width:22px; height:22px; border-radius:50%;
+  color:#fff; font-size:11px; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+  margin-top:1px;
+}
+.bs-step-text {
+  flex:1; font-size:12px; color:var(--text-primary);
+  line-height:1.45; outline:none; min-height:1em; cursor:text;
+}
+.bs-step-text:focus { color:var(--text-primary); }
+.bs-empty {
+  text-align:center; color:var(--text-dim);
+  font-size:12px; font-style:italic; padding:16px 0;
+}
+.bs-add-bar { padding:6px 12px; }
+
 /* ===== WX TAB ===== */
 .wx-input-row {
   background:var(--card-bg);
@@ -1218,72 +1309,31 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
       </div>
     </div>
 
-    <!-- Profile Card -->
+    <!-- Profile Card (dynamic) -->
     <div class="card" style="grid-row: span 2;">
-      <div class="card-header teal">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        Mission Profile
+      <div class="card-header teal" style="justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Mission Profile
+        </div>
+        <button class="hdr-btn" onclick="showAddEventMenu(event)" style="font-size:17px;line-height:1;padding:0 8px;font-weight:300;" title="Add event">+</button>
       </div>
-      <div class="card-body">
-        <div class="profile-section">
-          <div class="profile-section-title">Pattern Work</div>
-          <div class="profile-item">3/4 T&amp;G, FF T&amp;G, DUKE TAC@7500 ALZ FS</div>
-        </div>
-        <div class="profile-section">
-          <div class="profile-section-title">Low Level (VR106)</div>
-          <div class="profile-item">Circle East / Right base, Cat D — <strong>165 kts · 2.3 NM</strong></div>
-          <div class="profile-item">Neg C: <strong>3.7 today</strong></div>
-          <div class="profile-item">Local climb out</div>
-          <div class="profile-item">Nav Sensors: <strong>RNP 0.3</strong></div>
-        </div>
-        <div class="profile-section">
-          <div class="profile-section-title">AR Track (AR101)</div>
-          <div class="profile-item">Accel Alt: <strong>3800</strong> (MSA)</div>
-          <div class="profile-item">FD/HUD or PFD/NAV display ×2 / no "No CAT II" msgs</div>
-          <div class="profile-item">Restrictions: <strong>10 kt XW · RVR 1200 min</strong></div>
-          <div class="profile-item">Established within full-scale deflection</div>
-          <div class="profile-item">RAD ALT comparison</div>
-          <div class="profile-item">CAT II switch</div>
-          <div class="profile-item">Rdr Trim after Throttle</div>
-          <div class="profile-item">Light type briefed</div>
-        </div>
-        <div class="profile-section">
-          <div class="profile-section-title">LOC 36L (Non Std Config)</div>
-          <div class="profile-item">Accel Alt: <strong>SDP</strong></div>
-          <div class="profile-item">Spd Hold</div>
-          <div class="profile-item">Established within full-scale deflection</div>
-        </div>
+      <div class="card-body" id="mission-profile-body" style="padding:4px 0 8px;">
+        <!-- rendered by renderMissionProfile() -->
       </div>
     </div>
 
-    <!-- Box Setup Sequence Card — full row -->
+    <!-- Box Setup Sequence Card (dynamic) — full row -->
     <div class="card full-row">
-      <div class="card-header green">
-        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        Box Setup Sequence
+      <div class="card-header green" style="justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Box Setup Sequence
+        </div>
+        <button class="hdr-btn" onclick="addBoxStep()" style="font-size:17px;line-height:1;padding:0 8px;font-weight:300;" title="Add step">+</button>
       </div>
-      <div class="card-body" style="padding:0;">
-        <div class="step-row" data-color="#1a6ec7">
-          <div class="step-num">1</div>
-          <div class="step-text"><strong>Ldg TOLD 36R</strong> · 2NM FAF · Copy SEC · SDP Div Pt</div>
-        </div>
-        <div class="step-row" data-color="#0d8c68">
-          <div class="step-num" style="background:#0d8c68;">2</div>
-          <div class="step-text"><strong>Load SID 36L</strong> · Load T/O TOLD 36L · Verify Perf Factors</div>
-        </div>
-        <div class="step-row" data-color="#b06a0a">
-          <div class="step-num" style="background:#b06a0a;">3</div>
-          <div class="step-text"><strong>Load RNAV GPS A</strong> · Set MDA/Radar Mins · Set AFCS/P ID Switch</div>
-        </div>
-        <div class="step-row" data-color="#9090b0">
-          <div class="step-num" style="background:#9090b0;">4</div>
-          <div class="step-text" style="color:var(--text-dim); font-style:italic;">(empty)</div>
-        </div>
-        <div style="padding:8px 12px;">
-          <div class="key-points">
-            <strong>Key Points:</strong> 3800 ft OEI &nbsp;·&nbsp; 10 units rudder trim / 3 units roll trim into good engine &nbsp;·&nbsp; AP only until clean
-          </div>
-        </div>
+      <div class="card-body" id="box-setup-body" style="padding:0;">
+        <!-- rendered by renderBoxSetup() -->
       </div>
     </div>
 
@@ -2851,7 +2901,9 @@ function captureFields() {
     wxDest: (document.getElementById('wx-dest') || {}).value || '',
     wxAlt1: (document.getElementById('wx-alt1') || {}).value || '',
     wxAlt2: (document.getElementById('wx-alt2') || {}).value || '',
-    wxAlt3: (document.getElementById('wx-alt3') || {}).value || ''
+    wxAlt3: (document.getElementById('wx-alt3') || {}).value || '',
+    missionEvents: JSON.parse(JSON.stringify(_missionEvents)),
+    boxSteps: JSON.parse(JSON.stringify(_boxSteps))
   };
 }
 function populateFields(p) {
@@ -2871,6 +2923,8 @@ function populateFields(p) {
   if (p.wxAlt1) { const el=document.getElementById('wx-alt1'); if(el) el.value=p.wxAlt1; }
   if (p.wxAlt2) { const el=document.getElementById('wx-alt2'); if(el) el.value=p.wxAlt2; }
   if (p.wxAlt3) { const el=document.getElementById('wx-alt3'); if(el) el.value=p.wxAlt3; }
+  if (Array.isArray(p.missionEvents)) { _missionEvents = p.missionEvents; renderMissionProfile(); }
+  if (Array.isArray(p.boxSteps)) { _boxSteps = p.boxSteps; renderBoxSetup(); }
   updateDaipLinks();
 }
 function renderProfileDropdown() {
@@ -2906,6 +2960,191 @@ function deleteProfile() {
   delete profiles[name];
   saveProfiles(profiles);
   renderProfileDropdown();
+}
+
+// ===== MISSION PROFILE EVENTS =====
+const EVENT_TYPES = [
+  { type:'pattern',   label:'Pattern Work',    color:'#1a6ec7' },
+  { type:'ar',        label:'AR Track',         color:'#0d8c68' },
+  { type:'low-level', label:'Low Level',        color:'#7040b0' },
+  { type:'tactical',  label:'Tactical Profile', color:'#b06a0a' },
+  { type:'ingress',   label:'Ingress',          color:'#c04040' },
+  { type:'egress',    label:'Egress',           color:'#804040' },
+  { type:'ground',    label:'Ground Ops',       color:'#506070' },
+  { type:'offload',   label:'Combat Offload',   color:'#a07010' },
+  { type:'custom',    label:'Custom',           color:'#4a7090' },
+];
+
+const BS_STEP_COLORS = ['#1a6ec7','#0d8c68','#b06a0a','#9090b0','#c04040','#7040b0','#a07010','#506070'];
+
+let _missionEvents = []; // { type, title, color, items:[] }
+let _boxSteps = [];      // { text }
+
+function renderMissionProfile() {
+  const body = document.getElementById('mission-profile-body');
+  if (!body) return;
+  if (!_missionEvents.length) {
+    body.innerHTML = '<div class="mp-empty">No events — tap + to build the profile</div>';
+    return;
+  }
+  body.innerHTML = _missionEvents.map((ev, idx) => `
+    <div class="mp-event">
+      <div class="mp-event-header" style="border-left-color:${ev.color||'#4a7090'}">
+        <div class="mp-event-title" contenteditable="true" spellcheck="false"
+             onblur="mpUpdateTitle(${idx},this.textContent.trim())"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+        >${escapeHtml(ev.title)}</div>
+        <button class="mp-icon-btn" onclick="mpRemoveEvent(${idx})" title="Remove">✕</button>
+      </div>
+      <div class="mp-event-items">
+        ${ev.items.map((item, iIdx) => `
+          <div class="mp-item-row">
+            <span class="mp-bullet">·</span>
+            <div class="mp-item-text" contenteditable="true" spellcheck="false"
+                 onblur="mpUpdateItem(${idx},${iIdx},this.textContent.trim())"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();mpAddItem(${idx});}"
+            >${escapeHtml(item)}</div>
+            <button class="mp-icon-btn" onclick="mpRemoveItem(${idx},${iIdx})" title="Remove">✕</button>
+          </div>
+        `).join('')}
+        <span class="mp-add-item" onclick="mpAddItem(${idx})">+ add note</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function mpUpdateTitle(idx, val) {
+  if (_missionEvents[idx] && val) _missionEvents[idx].title = val;
+}
+function mpUpdateItem(idx, iIdx, val) {
+  if (!_missionEvents[idx]) return;
+  if (val) { _missionEvents[idx].items[iIdx] = val; }
+  else { _missionEvents[idx].items.splice(iIdx, 1); renderMissionProfile(); }
+}
+function mpRemoveEvent(idx) {
+  _missionEvents.splice(idx, 1);
+  renderMissionProfile();
+}
+function mpAddItem(idx) {
+  if (!_missionEvents[idx]) return;
+  _missionEvents[idx].items.push('');
+  renderMissionProfile();
+  // Focus the last item in this event
+  const evDivs = document.querySelectorAll('#mission-profile-body .mp-event');
+  if (evDivs[idx]) {
+    const items = evDivs[idx].querySelectorAll('.mp-item-text');
+    if (items.length) { items[items.length-1].focus(); }
+  }
+}
+function mpRemoveItem(idx, iIdx) {
+  if (_missionEvents[idx]?.items) {
+    _missionEvents[idx].items.splice(iIdx, 1);
+    renderMissionProfile();
+  }
+}
+
+function showAddEventMenu(e) {
+  e.stopPropagation();
+  const old = document.getElementById('mp-event-menu');
+  if (old) { old.remove(); return; }
+  const menu = document.createElement('div');
+  menu.id = 'mp-event-menu';
+  menu.className = 'event-type-menu';
+  EVENT_TYPES.forEach(et => {
+    const btn = document.createElement('button');
+    btn.innerHTML = `<span class="event-type-dot" style="background:${et.color}"></span>${escapeHtml(et.label)}`;
+    btn.onclick = () => { mpAddEvent(et); menu.remove(); };
+    menu.appendChild(btn);
+  });
+  document.body.appendChild(menu);
+  const rect = e.currentTarget.getBoundingClientRect();
+  menu.style.top  = (rect.bottom + 4) + 'px';
+  menu.style.right = (window.innerWidth - rect.right) + 'px';
+  setTimeout(() => {
+    document.addEventListener('click', function handler(ev) {
+      if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('click', handler); }
+    });
+  }, 10);
+}
+
+function mpAddEvent(et) {
+  _missionEvents.push({ type: et.type, title: et.label, color: et.color, items: [] });
+  renderMissionProfile();
+  // Focus title of new event
+  const evDivs = document.querySelectorAll('#mission-profile-body .mp-event-title');
+  if (evDivs.length) {
+    const last = evDivs[evDivs.length - 1];
+    last.focus();
+    document.execCommand('selectAll', false, null);
+  }
+}
+
+// Called from AR DB "Use in Mission" — adds AR event populated from track data
+function addArEventToMission(trackId, track) {
+  const title = 'AR Track' + (trackId ? ` (${trackId})` : '');
+  const items = [];
+  const alt    = track.trackAlt || track.alt_block;
+  const freq   = track.freq || track.freq_primary;
+  const freq2  = track.freq_secondary;
+  const tacan  = track.tacan || track.tacan_tanker;
+  const arip   = track.arcpFix || track.arip_navaid;
+  const exit   = track.exitFix || track.exit_navaid;
+  const rv     = track.rvType;
+  const spd    = track.arSpeed;
+  const tanker = track.tankerType;
+  if (tanker) items.push('Tanker: ' + tanker);
+  if (rv)     items.push('RV type: ' + rv);
+  if (alt)    items.push('Alt: ' + alt);
+  if (freq)   items.push('Freq: ' + freq + (freq2 ? ' / ' + freq2 : ''));
+  if (tacan)  items.push('TACAN: ' + tacan);
+  if (arip)   items.push('ARIP: ' + arip);
+  if (exit)   items.push('Exit: ' + exit);
+  if (spd)    items.push('AR speed: ' + spd);
+  _missionEvents.push({ type:'ar', title, color:'#0d8c68', items });
+  renderMissionProfile();
+  showToast('AR track ' + trackId + ' added to Mission Profile');
+}
+
+// ===== BOX SETUP SEQUENCE =====
+function renderBoxSetup() {
+  const body = document.getElementById('box-setup-body');
+  if (!body) return;
+  if (!_boxSteps.length) {
+    body.innerHTML = '<div class="bs-empty">No steps yet — tap + to add cockpit setup steps<br><span style="font-size:11px;opacity:0.6;">e.g. Load approaches, set MDA, verify perf factors</span></div>';
+    return;
+  }
+  const rows = _boxSteps.map((step, idx) => {
+    const color = BS_STEP_COLORS[idx % BS_STEP_COLORS.length];
+    return `<div class="bs-step-row">
+      <div class="bs-step-num" style="background:${color}">${idx+1}</div>
+      <div class="bs-step-text" contenteditable="true" spellcheck="false"
+           onblur="bsUpdateStep(${idx},this.innerHTML)"
+           onkeydown="if(event.key==='Enter'){event.preventDefault();addBoxStep();}"
+      >${step.text||''}</div>
+      <button class="mp-icon-btn" onclick="bsRemoveStep(${idx})" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+  body.innerHTML = rows + `<div class="bs-add-bar"><span class="mp-add-item" onclick="addBoxStep()">+ add step</span></div>`;
+}
+
+function addBoxStep() {
+  _boxSteps.push({ text:'' });
+  renderBoxSetup();
+  const steps = document.querySelectorAll('#box-setup-body .bs-step-text');
+  if (steps.length) steps[steps.length-1].focus();
+}
+
+function bsRemoveStep(idx) {
+  _boxSteps.splice(idx, 1);
+  renderBoxSetup();
+}
+
+function bsUpdateStep(idx, html) {
+  const stripped = html.replace(/<[^>]+>/g,'').trim();
+  if (_boxSteps[idx]) {
+    if (stripped) _boxSteps[idx].text = html;
+    else { _boxSteps.splice(idx, 1); renderBoxSetup(); }
+  }
 }
 
 // ===== DARK MODE =====
@@ -3662,12 +3901,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const dateStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   const di = document.getElementById('date-input');
   if (di && !di.value) di.value = dateStr;
-  // Apply step-row colors from data-color attributes
-  document.querySelectorAll('.step-row[data-color]').forEach(el => {
-    el.style.setProperty('--step-color', el.getAttribute('data-color'));
-  });
   // Restore saved content
   loadContent();
+  // Init Mission Profile and Box Setup
+  renderMissionProfile();
+  renderBoxSetup();
   // Init AR DB
   renderTrackList();
   // Init IndexedDB
@@ -4229,10 +4467,24 @@ function selectAp1bTrack(id) {
 }
 
 function useTrackInMission(id) {
-  const trackId = id || selectedTrackId;
-  if (!trackId) { alert('Select a track first'); return; }
-  const track = getTracks().find(t => t.id === trackId);
-  if (!track) return;
+  const trackId = id || selectedTrackId || (document.getElementById('tf-id')?.value.trim().toUpperCase());
+  if (!trackId) { alert('Select or enter a track ID first'); return; }
+  // Try saved tracks first; fall back to current form fields
+  let track = getTracks().find(t => t.id === trackId);
+  if (!track) {
+    // Read current form state
+    track = {
+      id:         trackId,
+      tankerType: document.getElementById('tf-tankerType')?.value || '',
+      rvType:     document.getElementById('tf-rvType')?.value || '',
+      freq:       document.getElementById('tf-freq')?.value || '',
+      tacan:      document.getElementById('tf-tacan')?.value || '',
+      arSpeed:    document.getElementById('tf-arSpeed')?.value || '',
+      trackAlt:   document.getElementById('tf-trackAlt')?.value || '',
+      arcpFix:    document.getElementById('tf-arcpFix')?.value || '',
+      exitFix:    document.getElementById('tf-exitFix')?.value || '',
+    };
+  }
   // Update SOE ARCT label based on RV type
   if (track.rvType) {
     const arctLbl = document.getElementById('soe-arct-lbl');
@@ -4242,9 +4494,9 @@ function useTrackInMission(id) {
       else arctLbl.textContent = 'ARCT (Z)';
     }
   }
-  // Note: ARCT time is left blank — user enters the actual time manually
+  // Add event to Mission Profile
+  addArEventToMission(trackId, track);
   switchTab('brief', document.querySelector('[onclick*="brief"]'));
-  showToast('AR track ' + trackId + ' loaded — enter ARCT time in SOE');
 }
 
 // ===== TRACK IMAGES =====
