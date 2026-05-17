@@ -2201,6 +2201,12 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
       <svg class="icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
       AR Track Library
     </div>
+    <!-- AP/1B info bar -->
+    <div id="ap1b-bar" style="display:none;margin-bottom:10px;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--accent-blue) 10%,var(--card-bg));border:1px solid color-mix(in srgb,var(--accent-blue) 30%,transparent);font-size:12px;color:var(--text-dim);align-items:center;gap:8px;">
+      <svg class="icon" style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span id="ap1b-bar-text">AP/1B loading…</span>
+    </div>
+
     <div class="ardb-layout">
 
       <!-- Left: Track List -->
@@ -2217,9 +2223,12 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
         <div id="track-form" class="track-form">
           <div class="card-header" style="margin-bottom:0;">Track Details</div>
           <div class="tf-grid">
-            <div class="tf-field">
-              <label class="tf-lbl">Track ID *</label>
-              <input class="tf-in" id="tf-id" type="text" placeholder="e.g. AR101">
+            <div class="tf-field" style="position:relative;">
+              <label class="tf-lbl" style="display:flex;align-items:center;gap:6px;">
+                Track ID *
+                <button class="hdr-btn" style="font-size:10px;padding:1px 6px;height:18px;line-height:1;" onclick="lookupAp1b()" title="Look up this track in AP/1B (DAIP FLIP)">⬇ AP/1B</button>
+              </label>
+              <input class="tf-in" id="tf-id" type="text" placeholder="e.g. AR101" oninput="clearAp1bBadge()">
             </div>
             <div class="tf-field">
               <label class="tf-lbl">Tanker Type</label>
@@ -2853,7 +2862,13 @@ function escapeHtml(s) {
 
 // ===== PERSONAL CONFIG — paste tokens here once =====
 const CONFIG = {
-  avwxToken: ''   // avwx.rest → Dashboard → Token (hardwire here to skip manual entry)
+  avwxToken: '',   // avwx.rest → Dashboard → Token (hardwire here to skip manual entry)
+
+  // Cloudflare Worker NOTAM proxy — deploy notam-worker.js at dash.cloudflare.com
+  // → Workers & Pages → Create → Create Worker → paste notam-worker.js → Deploy
+  // → copy the worker URL (e.g. https://mission-card-notam.YOUR-NAME.workers.dev)
+  // and paste it below. Leave empty to skip and fall back to direct API calls.
+  notamWorkerUrl: 'https://mission-card-notam.steven-nolan-jr.workers.dev'
 };
 
 // ===== WX / NOTAM HELPERS =====
@@ -2901,13 +2916,39 @@ async function fetchNotamsPublic(icaos) {
     return null;
   }
 
+  const workerBase = (CONFIG.notamWorkerUrl || '').trim().replace(/\/$/, '');
+
+  // Batch all ICAOs through the Worker in one request when URL is configured.
+  // On success, pre-populate results so per-ICAO loop skips Sources 2–3 for those.
+  if (workerBase) {
+    try {
+      const aptParam = icaos.join(',');
+      const res = await timedFetch(`${workerBase}/?apt=${encodeURIComponent(aptParam)}`);
+      if (res.ok) {
+        const data = await res.json();
+        for (const icao of icaos) {
+          const bare = icao.replace(/^K/,'');
+          const arr = data[icao] || data[bare];
+          if (Array.isArray(arr) && arr.length) {
+            results[icao] = { items: arr, source: 'worker' };
+          }
+        }
+        console.log('NOTAM Worker: fetched', Object.keys(results).length, 'of', icaos.length);
+      } else {
+        console.warn(`NOTAM Worker HTTP ${res.status} — falling back to direct sources`);
+      }
+    } catch(e) { console.warn('NOTAM Worker failed:', e.message, '— falling back to direct sources'); }
+  }
+
   for (const icao of icaos) {
     const bare = icao.replace(/^K/,'');
     let items = null;
     let source = '';
 
-    // Source 1: AVWX. As of current public docs, NOTAM fetch support is not as dependable as METAR/TAF,
-    // but some accounts/deployments may expose it. Keep it best-effort and never block the UI on it.
+    // Already resolved by Worker batch — skip direct sources.
+    if (results[icao]) continue;
+
+    // Source 2: AVWX. Best-effort; requires token. Not always reliable for NOTAMs.
     if (avwxToken) {
       try {
         const res = await timedFetch(`https://avwx.rest/api/notam/${encodeURIComponent(icao)}?token=${encodeURIComponent(avwxToken)}`);
@@ -2922,7 +2963,8 @@ async function fetchNotamsPublic(icaos) {
       } catch(e) { console.warn(`AVWX NOTAM failed for ${icao}:`, e.message); }
     }
 
-    // Source 2: aviationapi.com. This has been intermittent; try K-prefixed and bare identifiers.
+    // Source 3: aviationapi.com. CORS-blocked in most browsers from GitHub Pages.
+    // Succeeds only if the browser/environment allows cross-origin, or if Worker is not set.
     if (items === null) {
       for (const ident of [icao, bare]) {
         try {
@@ -2935,7 +2977,7 @@ async function fetchNotamsPublic(icaos) {
       }
     }
 
-    // Source 3: imported/pasted NOTAMs. This is the reliable no-CORS fallback.
+    // Source 4: imported/pasted NOTAMs. This is the reliable no-CORS fallback.
     if (items === null) {
       const manual = getManualNotamsFor(icao);
       if (manual.length) { items = manual; source = 'manual'; }
@@ -2983,11 +3025,20 @@ function extractNotam(item) {
         end: item.effective_end || ''
       };
     }
+    // SkyLink/FAA-SWIM format: { number, text, raw, effectiveStart, effectiveEnd }
+    if (item.text !== undefined || item.effectiveStart !== undefined) {
+      return {
+        number:  item.number || '?',
+        message: item.text || item.raw || '',
+        start:   item.effectiveStart || '',
+        end:     item.effectiveEnd   || ''
+      };
+    }
     // FAA nested format (legacy fallback)
     const n = item?.properties?.coreNOTAMData?.notam || item?.notam || item;
     return {
       number: n?.number || n?.notamNumber || '?',
-      message: String(n?.message || n?.traditionalMessage || n?.icaoMessage || ''),
+      message: String(n?.message || n?.text || n?.traditionalMessage || n?.icaoMessage || ''),
       start: n?.effectiveStart || n?.issued || '',
       end: n?.effectiveEnd || ''
     };
@@ -3510,6 +3561,10 @@ function switchTab(id, btn) {
       });
     } catch(e) {}
   }
+  // Pre-load AP/1B data when switching to AR DB tab
+  if (id === 'ardb') {
+    loadAp1bData();
+  }
 }
 
 // ===== DOWNLOAD =====
@@ -3941,6 +3996,106 @@ function deleteTrack() {
   newTrack();
   renderTrackList();
   showToast('Track deleted');
+}
+
+// ===== AP/1B LOOKUP =====
+let _ap1bCache = null;       // loaded once, kept in memory
+let _ap1bLoading = false;
+
+async function loadAp1bData() {
+  if (_ap1bCache) return _ap1bCache;
+  if (_ap1bLoading) return null;
+  _ap1bLoading = true;
+  try {
+    // Same-origin fetch — works on GitHub Pages and local server.
+    // Falls back to the data file in the same directory as index.html.
+    const res = await fetch('./ar_tracks.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    _ap1bCache = await res.json();
+    const bar = document.getElementById('ap1b-bar');
+    const txt = document.getElementById('ap1b-bar-text');
+    if (bar && txt) {
+      txt.textContent = `AP/1B loaded — ${_ap1bCache.total} CONUS AR tracks (cycle ${_ap1bCache.version}). Enter a Track ID and click ⬇ AP/1B to auto-fill.`;
+      bar.style.display = 'flex';
+    }
+    return _ap1bCache;
+  } catch(e) {
+    console.warn('AP/1B load failed:', e.message);
+    const bar = document.getElementById('ap1b-bar');
+    const txt = document.getElementById('ap1b-bar-text');
+    if (bar && txt) {
+      txt.textContent = 'AP/1B data unavailable — ar_tracks.json not found. Ensure it is committed alongside index.html.';
+      bar.style.display = 'flex';
+    }
+    return null;
+  } finally { _ap1bLoading = false; }
+}
+
+async function lookupAp1b() {
+  const rawId = (document.getElementById('tf-id')?.value || '').trim().toUpperCase();
+  if (!rawId) { showToast('Enter a Track ID first (e.g. AR101)'); return; }
+
+  const data = await loadAp1bData();
+  if (!data) { showToast('AP/1B data not available'); return; }
+
+  // Normalize: strip trailing direction suffixes and spaces (e.g. "AR312 LOW" → "AR312")
+  // AP/1B keys are bare IDs like "AR312", "AR101"
+  const normalized = rawId.replace(/\s+(HIGH|LOW|EAST|WEST|NORTH|SOUTH|[A-Z])$/,'').trim();
+  const track = data.tracks[rawId] || data.tracks[normalized];
+
+  if (!track) {
+    showToast(`${rawId} not found in AP/1B — check ID format (e.g. AR101, AR312)`);
+    return;
+  }
+
+  // Build TACAN string: e.g. "30X/93X  (tanker/receiver)"
+  const tacanStr = (() => {
+    const t = track.tacan_tanker, r = track.tacan_receiver;
+    if (t && r) return `${t}X/${r}X`;
+    if (t) return `${t}X`;
+    return '';
+  })();
+
+  // Build freq string: primary / secondary
+  const freqStr = (() => {
+    if (track.freq_primary && track.freq_secondary && track.freq_secondary !== 'N/R') {
+      return `${track.freq_primary} / ${track.freq_secondary}`;
+    }
+    return track.freq_primary || '';
+  })();
+
+  // Build notes: ARTCC, scheduling unit, DSN, directions, remarks
+  const noteLines = [];
+  if (track.artcc)            noteLines.push(`ARTCC: ${track.artcc}`);
+  if (track.scheduling_unit)  noteLines.push(`Scheduling: ${track.scheduling_unit}`);
+  if (track.dsn)              noteLines.push(`DSN: ${track.dsn}`);
+  if (track.directions?.length) noteLines.push(`Direction(s): ${track.directions.join(', ')}`);
+  if (track.arip_navaid)      noteLines.push(`ARIP: ${track.arip_navaid}`);
+  if (track.remarks)          noteLines.push(`\nRemarks: ${track.remarks}`);
+  const notesStr = noteLines.join('\n');
+
+  // Populate fields — only fill from AP/1B if field is currently empty or this is a fresh form
+  function fillField(id, val) {
+    const el = document.getElementById('tf-' + id);
+    if (el && val) el.value = val;
+  }
+  fillField('freq',      freqStr);
+  fillField('tacan',     tacanStr);
+  fillField('trackAlt',  track.alt_block || '');
+  fillField('arcpFix',   track.arcp_navaid || '');
+  fillField('arct',      track.arip_navaid || '');
+  fillField('exitFix',   track.exit_navaid || '');
+  // Merge remarks into notes — don't overwrite existing notes
+  const notesEl = document.getElementById('tf-notes');
+  if (notesEl && notesStr) {
+    notesEl.value = notesStr;
+  }
+
+  showToast(`AP/1B data loaded for ${track.id}`);
+}
+
+function clearAp1bBadge() {
+  // no-op placeholder — could clear a "loaded" indicator in the future
 }
 
 function useTrackInMission(id) {
