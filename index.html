@@ -1137,13 +1137,24 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
 
     <!-- SOE Card -->
     <div class="card">
-      <div class="card-header">
+      <div class="card-header" style="flex-wrap:wrap;gap:6px;">
         <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Sequence of Events
+        <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+          <button id="soe-mode-btn" class="hdr-btn" onclick="toggleSoeMode()" title="Toggle Zulu / Local input mode" style="min-width:28px;font-weight:700;">Z</button>
+          <select id="soe-tz" class="profile-select" style="font-size:11px;padding:2px 4px;max-width:90px;" onchange="soeCalc()">
+            <option value="Central">CST/CDT</option>
+            <option value="Mountain">MST/MDT</option>
+            <option value="Pacific">PST/PDT</option>
+            <option value="Eastern">EST/EDT</option>
+            <option value="Alaska">AKST/DT</option>
+            <option value="Hawaii">HST</option>
+          </select>
+        </span>
       </div>
       <div class="card-body">
         <div class="soe-row">
-          <span class="soe-label">Takeoff (Z)</span>
+          <span class="soe-label" id="soe-to-lbl">Takeoff (Z)</span>
           <input class="soe-input" id="soe-takeoff" type="text" inputmode="numeric" maxlength="4" placeholder="HHMM" oninput="soeCalc()">
         </div>
         <div class="soe-row">
@@ -1167,7 +1178,7 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
           <input class="soe-input" id="ll-entry" type="text" inputmode="numeric" maxlength="4" placeholder="HHMM">
         </div>
         <div class="soe-row">
-          <span class="soe-label">ARCT (Z)</span>
+          <span class="soe-label" id="soe-arct-lbl">ARCT (Z)</span>
           <input class="soe-input" id="arct-input" type="text" inputmode="numeric" maxlength="4" placeholder="HHMM">
         </div>
       </div>
@@ -2240,11 +2251,19 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
             </div>
             <div class="tf-field">
               <label class="tf-lbl">Tanker Type</label>
-              <select class="tf-in" id="tf-tankerType">
+              <select class="tf-in" id="tf-tankerType" onchange="onTankerTypeChange()">
                 <option value="KC-46">KC-46</option>
                 <option value="KC-135">KC-135</option>
-                <option value="KC-10">KC-10</option>
                 <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="tf-field">
+              <label class="tf-lbl">Rendezvous Type</label>
+              <select class="tf-in" id="tf-rvType" onchange="onRvTypeChange()">
+                <option value="">— Select —</option>
+                <option value="Alpha">Alpha — Anchor</option>
+                <option value="Delta">Delta — Point Parallel</option>
+                <option value="Golf">Golf — Enroute / IP</option>
               </select>
             </div>
             <div class="tf-field">
@@ -2276,8 +2295,8 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
               <input class="tf-in" id="tf-arcpFix" type="text" placeholder="e.g. ZAPPA">
             </div>
             <div class="tf-field">
-              <label class="tf-lbl">ARCT Fix / Coords</label>
-              <input class="tf-in" id="tf-arct" type="text" placeholder="e.g. NEXUS / 32.44N 095.12W">
+              <label class="tf-lbl">ARIP Navaid</label>
+              <input class="tf-in" id="tf-arct" type="text" placeholder="e.g. BAM VORTAC">
             </div>
             <div class="tf-field">
               <label class="tf-lbl">Exit Fix</label>
@@ -2751,23 +2770,64 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
 
 <script>
 // ===== SOE CALCULATOR =====
+let _soeModeLocal = false; // false = Zulu input, true = Local input
+
+function toggleSoeMode() {
+  _soeModeLocal = !_soeModeLocal;
+  const btn = document.getElementById('soe-mode-btn');
+  const lbl = document.getElementById('soe-to-lbl');
+  if (btn) btn.textContent = _soeModeLocal ? 'L' : 'Z';
+  if (lbl) lbl.textContent = _soeModeLocal ? 'Takeoff (L)' : 'Takeoff (Z)';
+  soeCalc();
+}
+
+function getSoeOffset() {
+  const tzName = document.getElementById('soe-tz')?.value || 'Central';
+  const tz = TZ_DATA[tzName];
+  if (!tz) return 6; // fallback CDT
+  const dateStr = document.getElementById('date-input')?.value || '';
+  const dst = isDST(dateStr, tzName);
+  return dst ? tz.dst : tz.std;
+}
+
 function soeCalc() {
-  const val = document.getElementById('soe-takeoff').value.trim();
-  if (val.length !== 4) {
-    ['soe-alert','soe-show','soe-stations','soe-to-display'].forEach(id => { document.getElementById(id).textContent = '—'; });
+  const raw = document.getElementById('soe-takeoff').value.trim();
+  if (raw.length !== 4) {
+    ['soe-alert','soe-show','soe-stations','soe-to-display'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
     return;
   }
-  const h = parseInt(val.slice(0,2)), m = parseInt(val.slice(2,4));
+  const h = parseInt(raw.slice(0,2)), m = parseInt(raw.slice(2,4));
   if (isNaN(h) || isNaN(m)) return;
-  const toMins = h*60+m;
-  const fmt = mins => {
+
+  const offset = getSoeOffset(); // hours to subtract from Z to get local
+
+  // Convert input to Zulu minutes
+  let zuluMins = h*60+m;
+  if (_soeModeLocal) {
+    // Input is local — convert to Zulu
+    zuluMins = ((h*60+m + offset*60) % 1440 + 1440) % 1440;
+  }
+
+  const fmtZ = mins => {
     const mm = ((mins%1440)+1440)%1440;
     return String(Math.floor(mm/60)).padStart(2,'0')+String(mm%60).padStart(2,'0');
   };
-  document.getElementById('soe-alert').textContent = fmt(toMins-225);
-  document.getElementById('soe-show').textContent = fmt(toMins-165);
-  document.getElementById('soe-stations').textContent = fmt(toMins-45);
-  document.getElementById('soe-to-display').textContent = val;
+  const fmtL = zuluM => {
+    const localM = ((zuluM - offset*60)%1440+1440)%1440;
+    return String(Math.floor(localM/60)).padStart(2,'0')+String(localM%60).padStart(2,'0');
+  };
+  const dual = (zuluM) => {
+    const zStr = fmtZ(zuluM);
+    const lStr = fmtL(zuluM);
+    return `<span style="font-weight:700">${zStr}Z</span><span style="font-size:11px;color:var(--text-dim);margin-left:6px;">${lStr}L</span>`;
+  };
+
+  document.getElementById('soe-alert').innerHTML    = dual(zuluMins - 225);
+  document.getElementById('soe-show').innerHTML     = dual(zuluMins - 165);
+  document.getElementById('soe-stations').innerHTML = dual(zuluMins - 45);
+  document.getElementById('soe-to-display').innerHTML = dual(zuluMins);
 }
 
 // ===== PROFILE SYSTEM =====
@@ -3948,10 +4008,11 @@ function selectTrack(id) {
 }
 
 function populateTrackForm(t) {
-  ['id','tankerType','callsign','freq','tacan','arSpeed','trackAlt','rxAlt','arcpFix','arct','exitFix','notes'].forEach(f => {
+  ['id','tankerType','callsign','freq','tacan','arSpeed','trackAlt','rxAlt','arcpFix','arct','exitFix','notes','rvType'].forEach(f => {
     const el = document.getElementById('tf-'+f);
     if (el) el.value = t[f] || '';
   });
+  onRvTypeChange(); // update SOE ARCT label
 }
 
 function newTrack() {
@@ -3963,6 +4024,8 @@ function newTrack() {
   });
   const tt = document.getElementById('tf-tankerType');
   if (tt) tt.value = 'KC-46';
+  const rv = document.getElementById('tf-rvType');
+  if (rv) rv.value = '';
   document.getElementById('track-img-grid').innerHTML = '<div style="font-size:12px;color:var(--text-dim);">No charts attached</div>';
   document.getElementById('tf-id')?.focus();
 }
@@ -3986,6 +4049,7 @@ function saveTrack() {
     arct: document.getElementById('tf-arct')?.value || '',
     exitFix: document.getElementById('tf-exitFix')?.value || '',
     notes: document.getElementById('tf-notes')?.value || '',
+    rvType: document.getElementById('tf-rvType')?.value || '',
     imageKeys: existing ? (existing.imageKeys || []) : []
   };
   if (idx >= 0) tracks[idx] = track;
@@ -4107,6 +4171,28 @@ function clearAp1bBadge() {
   // no-op placeholder
 }
 
+function onTankerTypeChange() {
+  const tt  = document.getElementById('tf-tankerType')?.value;
+  const spd = document.getElementById('tf-arSpeed');
+  if (!spd || spd.value) return; // don't overwrite user-entered value
+  if (tt === 'KC-46')  spd.value = '275 KCAS';
+  if (tt === 'KC-135') spd.value = '265 KCAS';
+}
+
+function onRvTypeChange() {
+  const rv = document.getElementById('tf-rvType')?.value;
+  // Update SOE ARCT label to reflect timing point
+  const arctLbl = document.getElementById('soe-arct-lbl');
+  if (!arctLbl) return;
+  if (rv === 'Delta') {
+    arctLbl.textContent = 'CP (Z)'; // control point for point parallel
+  } else if (rv === 'Alpha' || rv === 'Golf') {
+    arctLbl.textContent = 'ARIP/IP (Z)';
+  } else {
+    arctLbl.textContent = 'ARCT (Z)';
+  }
+}
+
 function populateAp1bSelect(data) {
   const sel = document.getElementById('ap1b-select');
   if (!sel) return;
@@ -4147,10 +4233,18 @@ function useTrackInMission(id) {
   if (!trackId) { alert('Select a track first'); return; }
   const track = getTracks().find(t => t.id === trackId);
   if (!track) return;
-  const arctEl = document.getElementById('arct-input');
-  if (arctEl) arctEl.value = track.arct || trackId;
+  // Update SOE ARCT label based on RV type
+  if (track.rvType) {
+    const arctLbl = document.getElementById('soe-arct-lbl');
+    if (arctLbl) {
+      if (track.rvType === 'Delta') arctLbl.textContent = 'CP (Z)';
+      else if (track.rvType === 'Alpha' || track.rvType === 'Golf') arctLbl.textContent = 'ARIP/IP (Z)';
+      else arctLbl.textContent = 'ARCT (Z)';
+    }
+  }
+  // Note: ARCT time is left blank — user enters the actual time manually
   switchTab('brief', document.querySelector('[onclick*="brief"]'));
-  showToast('AR track ' + trackId + ' loaded into mission');
+  showToast('AR track ' + trackId + ' loaded — enter ARCT time in SOE');
 }
 
 // ===== TRACK IMAGES =====
@@ -4343,6 +4437,7 @@ const TZ_DATA = {
   Mountain: { std:7,  dst:6,  usesDST:true  },
   Pacific:  { std:8,  dst:7,  usesDST:true  },
   Arizona:  { std:7,  dst:7,  usesDST:false },
+  Alaska:   { std:9,  dst:8,  usesDST:true  },
   Hawaii:   { std:10, dst:10, usesDST:false },
 };
 
