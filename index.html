@@ -341,6 +341,16 @@ a { color:var(--accent-blue); }
 }
 .ss-text { font-size:12px; color:var(--text-primary); line-height:1.45; }
 .ss-text strong { color:var(--text-primary); font-weight:700; }
+.ss-bullets { margin:4px 0 0 2px; padding:0; list-style:none; }
+.ss-bullets li {
+  font-size:11px; color:var(--text-secondary); line-height:1.45;
+  padding:1px 0 1px 12px; position:relative;
+}
+.ss-bullets li::before {
+  content:'·'; position:absolute; left:2px;
+  color:var(--accent-amber); font-weight:700;
+}
+.ss-bullets li strong { color:var(--text-primary); font-weight:700; }
 
 /* ===== PROFILE CARD ===== */
 .profile-section { margin-bottom:10px; }
@@ -1282,30 +1292,66 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
         Safety Supplements
       </div>
       <div class="card-body">
+
         <div class="ss-item">
           <span class="ss-code">SS-325</span>
-          <span class="ss-text"><strong>MGPS date anomaly</strong> — Manually enter date during IRU initialization</span>
+          <div class="ss-text">
+            <strong>MGPS Date Anomaly</strong> — 16 MAR 26 · possible after 28 MAR 26 0000Z
+            <ul class="ss-bullets">
+              <li>Manually enter <strong>/DDMMYY</strong> at MSN INIT pg LSK 4R every IRU alignment — even if date looks correct</li>
+              <li>Verify date shifts to <strong>small font, no brackets</strong> (up to 10 min to take effect)</li>
+              <li><strong>TOD RECEIVE:</strong> COM RADIOS pg 2 → press both LSKs 5L and 5R</li>
+              <li>Affects IFF, HAVEQUICK, SINCGARS, SFDR, MC/VIP timestamps</li>
+              <li>Cockpit Interior Inspection is <strong>no longer a flow</strong> — must be done in order</li>
+              <li>CB cycle (OVHD B08 / EPC R T29) = last resort only, after correct date entered</li>
+            </ul>
+          </div>
         </div>
+
         <div class="ss-item">
           <span class="ss-code">SS-324</span>
-          <span class="ss-text"><strong>NLG steering actuator</strong> — Depressurize hyd sys before inserting / removing NG pins</span>
+          <div class="ss-text">
+            <strong>NLG Steering Actuator</strong> — 1 FEB 26
+            <ul class="ss-bullets">
+              <li><strong>WARNING:</strong> Remove hydraulic pressure before installing or removing Nose Gear and Bypass Valve Safety pins</li>
+              <li>Applies at Exterior Inspection (Step 3.g), Engine Shutdown (Pilot Step 10, LM Step 2)</li>
+            </ul>
+          </div>
         </div>
+
         <div class="ss-item">
-          <span class="ss-code">OP SUP 1S-323</span>
-          <span class="ss-text"><strong>Landing w/ 1–2 engines inop</strong> — Step 5 response: <strong>"3/4 Flaps"</strong></span>
+          <span class="ss-code">1S-323</span>
+          <div class="ss-text">
+            <strong>Landing w/ 1–2 Engines Inop</strong> — 31 JAN 26 · checklist corrections
+            <ul class="ss-bullets">
+              <li><strong>1 ENG INOP Step 5</strong> landing config: <strong>3/4 Flap</strong> (not Slat EXT, Flaps ½, Index 0)</li>
+              <li><strong>2 ENG INOP Step 3</strong> No-branch: now routes to Step 4 (instruction was missing)</li>
+            </ul>
+          </div>
         </div>
+
         <div class="ss-item">
           <span class="ss-code">SS-322</span>
-          <span class="ss-text"><strong>Revised gear down/locked indications</strong> — Always pin the gear</span>
+          <div class="ss-text">
+            <strong>Revised Gear Down-Locked Indications</strong> — 30 JAN 26
+            <ul class="ss-bullets">
+              <li>Any unsafe indication on gear panel, MFD CFG, or handle → go to Alternate LG Extension</li>
+              <li><strong>Do not recycle gear</strong> if malfunction occurs during extension</li>
+              <li>Pin all gear showing visual down/locked (red bands aligned) — regardless of window check result</li>
+              <li>Divert with gear extended: add <strong>Drag Index 280</strong> to PERF FACTORS page</li>
+            </ul>
+          </div>
         </div>
+
         <div class="ss-item">
           <span class="ss-code">FCIF 26-19B</span>
-          <span class="ss-text"><strong>MAF Enroute CPDLC</strong> participation guidance (update)</span>
+          <span class="ss-text"><strong>MAF Enroute CPDLC</strong> — participation guidance (update)</span>
         </div>
         <div class="ss-item">
           <span class="ss-code">SII</span>
           <span class="ss-text">None active</span>
         </div>
+
       </div>
     </div>
 
