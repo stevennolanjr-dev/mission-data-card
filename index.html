@@ -564,6 +564,15 @@ a { color:var(--accent-blue); }
 .wx-val { font-size:12px; font-weight:600; color:var(--text-primary); }
 .taf-section { margin-top:6px; }
 .taf-section summary { font-size:11px; font-weight:700; color:var(--accent-blue); padding:4px 0; }
+.taf-decode-wrap { margin-top:6px; overflow-x:auto; }
+.taf-decode-table { width:100%; border-collapse:collapse; font-size:10.5px; }
+.taf-decode-table th { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-dim); padding:3px 6px; border-bottom:1px solid var(--card-border); text-align:left; white-space:nowrap; }
+.taf-decode-table td { padding:3px 6px; border-bottom:1px solid color-mix(in srgb,var(--card-border) 50%,transparent); color:var(--text-primary); vertical-align:middle; white-space:nowrap; }
+.taf-decode-table tr:last-child td { border-bottom:none; }
+.taf-type-badge { font-size:9px; font-weight:800; letter-spacing:0.05em; padding:1px 5px; border-radius:3px; background:rgba(26,110,199,0.15); color:var(--accent-blue); }
+.taf-type-badge.tempo { background:rgba(176,106,10,0.15); color:var(--accent-amber); }
+.taf-type-badge.becmg  { background:rgba(13,140,104,0.15); color:var(--accent-green); }
+.taf-type-badge.prob   { background:rgba(155,89,182,0.15); color:var(--accent-purple); }
 .wx-no-data { font-size:12px; color:var(--text-dim); text-align:center; padding:16px; }
 .sigmet-item { padding:6px 0; border-bottom:1px solid var(--card-border); font-size:12px; display:flex; gap:6px; align-items:flex-start; }
 .sigmet-item:last-child { border-bottom:none; }
@@ -615,6 +624,15 @@ a { color:var(--accent-blue); }
 .notam-gps-badge { font-size:9px; font-weight:700; background:rgba(138,43,226,0.15); color:var(--accent-purple); border-radius:3px; padding:1px 5px; }
 .notam-eff { font-size:10px; color:var(--text-dim); }
 .notam-count { font-size:10px; font-weight:700; background:rgba(21,112,191,0.15); color:var(--accent-blue); border-radius:3px; padding:1px 6px; }
+.notam-source-badge { font-size:9px; font-weight:700; border-radius:3px; padding:1px 5px; background:rgba(13,140,104,0.14); color:var(--accent-green); border:1px solid rgba(13,140,104,0.24); }
+.notam-source-badge.manual { background:rgba(176,106,10,0.14); color:var(--accent-amber); border-color:rgba(176,106,10,0.25); }
+.notam-tools { margin-top:10px; padding-top:10px; border-top:1px solid var(--card-border); }
+.notam-tools summary { font-size:11px; font-weight:700; color:var(--accent-blue); padding:4px 0; }
+.notam-paste-input { width:100%; min-height:110px; resize:vertical; margin-top:6px; background:var(--input-bg); border:1px solid var(--input-border); border-radius:6px; padding:8px 10px; font-family:'SF Mono','Fira Code','Consolas',monospace; font-size:11px; line-height:1.45; color:var(--text-primary); }
+.notam-tool-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+.notam-tool-btn { border:none; border-radius:6px; padding:7px 12px; min-height:36px; font-size:11px; font-weight:700; cursor:pointer; background:var(--accent-blue); color:#fff; }
+.notam-tool-btn.secondary { background:var(--input-bg); color:var(--text-secondary); border:1px solid var(--card-border); }
+.notam-tool-note { font-size:10px; color:var(--text-dim); line-height:1.45; }
 .gps-live-section { background:color-mix(in srgb,var(--accent-purple) 6%,var(--step-bg)); border:1px solid color-mix(in srgb,var(--accent-purple) 25%,transparent); border-radius:5px; padding:8px 10px; margin-top:12px; margin-bottom:8px; }
 .gps-live-title { font-size:10px; font-weight:700; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:5px; }
 
@@ -1319,13 +1337,23 @@ input[type=range].perf-slider { width:100%; margin:4px 0 2px; }
       NOTAMs
     </div>
     <div class="card-body">
-      <!-- Live NOTAMs — auto-fetched via aviationapi.com on FETCH WX -->
+      <!-- Live NOTAMs — auto-fetched when a public source is available; manual paste is the reliable fallback -->
       <div id="notam-content" style="display:none; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--card-border);"></div>
       <div id="notam-no-key" style="display:none;"></div>
-      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;" id="notam-hint">Hit FETCH WX to load NOTAMs. DAIP links below for full military coverage.</p>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;" id="notam-hint">Hit FETCH WX to try public NOTAM sources. If they fail, use DAIP/FAA/1800WXBrief and paste the NOTAM text below.</p>
       <div id="daip-links" style="display:flex;flex-wrap:wrap;gap:8px;">
         <span style="font-size:12px;color:var(--text-dim);font-style:italic;">Enter airport ICAOs above to generate DAIP links</span>
       </div>
+      <details class="notam-tools">
+        <summary>Manual NOTAM import / no-CORS fallback</summary>
+        <div class="notam-tool-note">Paste raw NOTAM text from DAIP, FAA NOTAM Search, ForeFlight, or 1800WXBrief. The card will split entries, store them locally, and still flag GPS/GNSS/RAIM hits.</div>
+        <textarea class="notam-paste-input" id="notam-paste-input" placeholder="Paste NOTAM text here..."></textarea>
+        <div class="notam-tool-row">
+          <button class="notam-tool-btn" onclick="importManualNotams()">IMPORT PASTED NOTAMS</button>
+          <button class="notam-tool-btn secondary" onclick="clearManualNotams()">CLEAR IMPORTED</button>
+          <span class="notam-tool-note" id="notam-manual-status"></span>
+        </div>
+      </details>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--card-border);display:flex;gap:8px;flex-wrap:wrap;">
         <a href="https://www.daip.jcs.mil" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent-blue);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
           <svg style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -2848,70 +2876,86 @@ function updateDaipLinks() {
   ).join('');
 }
 
-// ===== NOTAM FETCH — multi-source with fallback =====
+// ===== NOTAM FETCH — best-effort public sources + reliable manual fallback =====
+const NOTAM_MANUAL_KEY = 'mc_manual_notams_v1';
+
 async function fetchNotamsPublic(icaos) {
   const results = {};
   const avwxToken = localStorage.getItem('avwx_token');
-  const hosted = isHostedOrigin();
 
-  async function timedFetch(url, opts, ms=10000) {
+  async function timedFetch(url, opts, ms=9000) {
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), ms);
     try { const r = await fetch(url, { ...opts, signal: ctrl.signal }); clearTimeout(tid); return r; }
     catch(e) { clearTimeout(tid); throw e; }
   }
 
-  for (const icao of icaos) {
-    let items = null;
+  function normalizeNotamPayload(data, icao, bare) {
+    if (Array.isArray(data)) return data;
+    if (!data || typeof data !== 'object') return null;
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.notams)) return data.notams;
+    const found = data[icao] || data[bare] || data[icao.toLowerCase()] || data[bare.toLowerCase()];
+    if (Array.isArray(found)) return found;
+    if (found && Array.isArray(found.notams)) return found.notams;
+    return null;
+  }
 
-    // Source 1: AVWX — CORS-enabled, same token we use for METAR/TAF
-    // Works from hosted AND localhost. Use whenever token is available.
+  for (const icao of icaos) {
+    const bare = icao.replace(/^K/,'');
+    let items = null;
+    let source = '';
+
+    // Source 1: AVWX. As of current public docs, NOTAM fetch support is not as dependable as METAR/TAF,
+    // but some accounts/deployments may expose it. Keep it best-effort and never block the UI on it.
     if (avwxToken) {
       try {
-        const url = `https://avwx.rest/api/notam/${encodeURIComponent(icao)}?token=${avwxToken}`;
-        const res = await timedFetch(url, {});
+        const res = await timedFetch(`https://avwx.rest/api/notam/${encodeURIComponent(icao)}?token=${encodeURIComponent(avwxToken)}`);
         if (res.ok) {
           const data = await res.json();
-          // AVWX returns an array of NOTAM objects with .raw / .number / .start_time / .end_time
-          if (Array.isArray(data)) { items = data; }
+          const normalized = normalizeNotamPayload(data, icao, bare);
+          if (normalized) { items = normalized; source = 'AVWX'; }
           else if (data.error) console.warn(`AVWX NOTAM ${icao}: ${data.error}`);
+        } else {
+          console.warn(`AVWX NOTAM ${icao}: HTTP ${res.status}`);
         }
       } catch(e) { console.warn(`AVWX NOTAM failed for ${icao}:`, e.message); }
     }
 
-    // Source 2: AWC direct — no CORS issues on localhost/file://, blocked on hosted
-    if (items === null && !hosted) {
-      try {
-        const url = `https://aviationweather.gov/api/data/notam?ids=${encodeURIComponent(icao)}&format=json`;
-        const res = await timedFetch(url, {});
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) items = data;
-        }
-      } catch(e) { console.warn(`AWC NOTAM failed for ${icao}:`, e.message); }
-    }
-
-    // Source 3: aviationapi.com — free, no key, CORS-enabled (may be unreliable)
+    // Source 2: aviationapi.com. This has been intermittent; try K-prefixed and bare identifiers.
     if (items === null) {
-      try {
-        const bare = icao.replace(/^K/,'');
-        const url = `https://api.aviationapi.com/v1/notams?apt=${encodeURIComponent(bare)}`;
-        const res = await timedFetch(url, {});
-        if (res.ok) {
+      for (const ident of [icao, bare]) {
+        try {
+          const res = await timedFetch(`https://api.aviationapi.com/v1/notams?apt=${encodeURIComponent(ident)}`);
+          if (!res.ok) { console.warn(`aviationapi NOTAM ${ident}: HTTP ${res.status}`); continue; }
           const data = await res.json();
-          const found = data[icao] || data[bare];
-          if (found !== undefined) items = found;
-          else { items = []; console.warn(`NOTAM: no key for ${icao} in aviationapi response`); }
-        }
-      } catch(e) { console.warn(`aviationapi NOTAM failed for ${icao}:`, e.message); }
+          const normalized = normalizeNotamPayload(data, icao, bare);
+          if (normalized) { items = normalized; source = 'aviationapi'; break; }
+        } catch(e) { console.warn(`aviationapi NOTAM failed for ${ident}:`, e.message); }
+      }
     }
 
-    results[icao] = items; // null = all sources failed; [] = no active NOTAMs
+    // Source 3: imported/pasted NOTAMs. This is the reliable no-CORS fallback.
+    if (items === null) {
+      const manual = getManualNotamsFor(icao);
+      if (manual.length) { items = manual; source = 'manual'; }
+    }
+
+    results[icao] = items === null ? null : { items, source };
   }
   return results;
 }
 function extractNotam(item) {
   try {
+    // Manual paste format
+    if (item.source === 'manual') {
+      return {
+        number: item.number || '?',
+        message: item.message || item.raw || '',
+        start: item.start || '',
+        end: item.end || ''
+      };
+    }
     // AVWX format: { raw, sanitized, number, start_time:{dt}, end_time:{dt} }
     if (item.raw !== undefined && item.start_time !== undefined) {
       return {
@@ -2964,12 +3008,15 @@ function renderNotams(notamData) {
   let gpsHits = [];
   let html = '';
   for (const icao of icaos) {
-    const items = notamData[icao];
-    if (items === null) {
-      html += `<div class="notam-icao-section"><div class="notam-icao-title">${icao} <span style="color:var(--accent-red);font-size:10px;">fetch failed</span></div><div style="font-size:11px;color:var(--text-dim);padding:3px 0 3px 8px;">aviationapi.com unavailable — use DAIP links below for current NOTAMs.</div></div>`;
+    const entry = notamData[icao];
+    if (entry === null) {
+      html += `<div class="notam-icao-section"><div class="notam-icao-title">${icao} <span style="color:var(--accent-red);font-size:10px;">manual review required</span></div><div style="font-size:11px;color:var(--text-dim);padding:3px 0 3px 8px;">No public browser-fetchable source returned NOTAMs. Use DAIP/FAA/1800WXBrief links below, then paste NOTAM text into Manual Import if you want it captured here.</div></div>`;
       continue;
     }
-    html += `<div class="notam-icao-section"><div class="notam-icao-title">${icao} <span class="notam-count">${items.length}</span></div>`;
+    const items = Array.isArray(entry) ? entry : (entry.items || []);
+    const source = Array.isArray(entry) ? 'auto' : (entry.source || 'auto');
+    const sourceClass = source === 'manual' ? ' manual' : '';
+    html += `<div class="notam-icao-section"><div class="notam-icao-title">${icao} <span class="notam-count">${items.length}</span><span class="notam-source-badge${sourceClass}">${esc(source)}</span></div>`;
     if (!items.length) {
       html += `<div style="font-size:11px;color:var(--text-dim);padding:3px 0 3px 8px;">No active NOTAMs</div>`;
     } else {
@@ -3002,6 +3049,85 @@ function renderGpsLive(gpsHits) {
       `<div class="notam-item gps-hit"><span class="notam-num">${esc(n.icao)} ${esc(n.number)}</span> ${esc(n.message)}</div>`
     ).join('');
   }
+}
+
+function getManualNotams() {
+  try { return JSON.parse(localStorage.getItem(NOTAM_MANUAL_KEY) || '{}'); } catch(e) { return {}; }
+}
+
+function saveManualNotams(data) {
+  localStorage.setItem(NOTAM_MANUAL_KEY, JSON.stringify(data));
+}
+
+function getManualNotamsFor(icao) {
+  const all = getManualNotams();
+  const bare = icao.replace(/^K/,'');
+  return all[icao] || all[bare] || [];
+}
+
+function parseManualNotamText(rawText, fallbackIcaos) {
+  const raw = String(rawText || '').replace(/\r/g, '').trim();
+  if (!raw) return {};
+  const icaos = (fallbackIcaos && fallbackIcaos.length ? fallbackIcaos : getIcaos()).map(x => x.toUpperCase());
+  const chunks = raw
+    .split(/\n(?=(?:[A-Z0-9]{3,4}\s+)?(?:\d{2}\/\d{3}|[A-Z]\d{4}\/\d{2}|[A-Z]{1,4}\s+\d+\/\d+|\d+\/\d+)\s+NOTAM[NRPC]?\b)/i)
+    .map(s => s.trim())
+    .filter(Boolean);
+  const grouped = {};
+  const candidates = chunks.length ? chunks : [raw];
+
+  for (const chunk of candidates) {
+    let station = '';
+    const aLine = chunk.match(/\bA\)\s*([A-Z0-9]{3,4})\b/i);
+    if (aLine) station = aLine[1].toUpperCase();
+    if (!station) {
+      const leading = chunk.match(/^([A-Z0-9]{3,4})\s+(?=\d{2}\/\d{3}|[A-Z]?\d+\/\d+|NOTAM)/i);
+      if (leading) station = leading[1].toUpperCase();
+    }
+    if (!station && icaos.length === 1) station = icaos[0];
+    if (!station) station = 'MANUAL';
+    const number = (chunk.match(/\b((?:[A-Z]\d{4}|\d{2})\/\d{2,4})\b/) || [,'?'])[1];
+    const start = (chunk.match(/\bB\)\s*([^\n]+)/i) || [,''])[1].trim();
+    const end = (chunk.match(/\bC\)\s*([^\n]+)/i) || [,''])[1].trim();
+    if (!grouped[station]) grouped[station] = [];
+    grouped[station].push({ source:'manual', number, message:chunk, start, end, importedAt:new Date().toISOString() });
+  }
+  return grouped;
+}
+
+function importManualNotams() {
+  const input = document.getElementById('notam-paste-input');
+  const status = document.getElementById('notam-manual-status');
+  if (!input) return;
+  const parsed = parseManualNotamText(input.value, getIcaos());
+  const keys = Object.keys(parsed);
+  if (!keys.length) {
+    if (status) status.textContent = 'Nothing to import.';
+    return;
+  }
+  const all = getManualNotams();
+  keys.forEach(k => { all[k] = parsed[k]; });
+  saveManualNotams(all);
+  const data = {};
+  getIcaos().forEach(icao => {
+    const manual = getManualNotamsFor(icao);
+    data[icao] = manual.length ? { items: manual, source: 'manual' } : null;
+  });
+  renderNotams(data);
+  const hint = document.getElementById('notam-hint');
+  if (hint) hint.style.display = 'none';
+  input.value = '';
+  if (status) status.textContent = `Imported ${keys.reduce((n,k)=>n+parsed[k].length,0)} NOTAM item(s).`;
+}
+
+function clearManualNotams() {
+  if (!confirm('Clear manually imported NOTAMs from this browser?')) return;
+  localStorage.removeItem(NOTAM_MANUAL_KEY);
+  const status = document.getElementById('notam-manual-status');
+  if (status) status.textContent = 'Imported NOTAMs cleared.';
+  renderGpsLive([]);
+  const el = document.getElementById('notam-content');
+  if (el) { el.innerHTML = '<div class="wx-no-data">Manual NOTAMs cleared. Fetch or paste NOTAMs to reload.</div>'; el.style.display = 'block'; }
 }
 
 // ===== AVWX KEY =====
@@ -3051,7 +3177,115 @@ function avwxToMetar(a) {
 }
 function avwxToTaf(a) {
   if (!a || a.error) return null;
-  return { rawTAF: a.raw || '' };
+  const periods = [];
+  if (Array.isArray(a.forecast)) {
+    for (const f of a.forecast) {
+      const wdir = f.wind_direction?.repr === 'VRB' ? 'VRB' : (f.wind_direction?.value ?? null);
+      const clouds = (f.clouds || []).map(c => ({ type: c.type, alt: (c.altitude ?? 0) * 100 }));
+      const ceiling = clouds.find(c => ['BKN','OVC','VV'].includes(c.type));
+      const sky = clouds.length ? clouds.map(c => c.type + c.alt).join(' ') : 'SKC';
+      const wx = (f.wx_codes || []).map(w => w.repr || w.value || '').filter(Boolean).join(' ');
+      periods.push({
+        type: f.type || 'FM',
+        prob: f.probability?.value || null,
+        start: f.start_time?.dt || f.start_time?.repr || '',
+        end:   f.end_time?.dt   || f.end_time?.repr   || '',
+        wdir, wspd: f.wind_speed?.value ?? null, wgst: f.wind_gust?.value || null,
+        vis: f.visibility?.value ?? null,
+        cig: ceiling?.alt ?? null, sky, wx,
+        cat: f.flight_rules || null
+      });
+    }
+  }
+  return { rawTAF: a.raw || '', issued: a.time?.dt || '', periods: periods.length ? periods : null };
+}
+
+// Parse raw ICAO TAF text into structured periods (used when AVWX structured data is unavailable)
+function parseTafPeriods(raw) {
+  if (!raw) return null;
+  const text = raw.replace(/\r?\n/g,' ').replace(/\s+/g,' ').trim();
+  // Split into groups at each FM/TEMPO/BECMG/PROBxx marker
+  const parts = text.split(/(?=\bFM\d{6}\b|\bTEMPO\b|\bBECMG\b|\bPROB\d{2}\b)/);
+  const periods = [];
+  for (const part of parts) {
+    const p = part.trim();
+    if (!p || p.length < 8) continue;
+    let type = 'BASE', prob = null, start = '', end = '';
+    const fm  = p.match(/^FM(\d{2})(\d{2})(\d{2})\s/);
+    const tp  = p.match(/^(TEMPO|BECMG)\s+(\d{2})(\d{2})\/(\d{2})(\d{2})\s/);
+    const pb  = p.match(/^PROB(\d{2})(?:\s+(TEMPO))?\s+(\d{2})(\d{2})\/(\d{2})(\d{2})\s/);
+    if (fm) {
+      type = 'FM'; start = `D${fm[1]} ${fm[2]}:${fm[3]}Z`;
+    } else if (tp) {
+      type = tp[1];
+      start = `D${tp[2]}/${tp[3]}Z`; end = `D${tp[4]}/${tp[5]}Z`;
+    } else if (pb) {
+      prob = parseInt(pb[1]); type = pb[2] || 'PROB';
+      start = `D${pb[3]}/${pb[4]}Z`; end = `D${pb[5]}/${pb[6]}Z`;
+    }
+    // Wind
+    const wm = p.match(/\b(VRB|\d{3})(\d{2,3})(G(\d{2,3}))?KT\b/);
+    const wdir = wm ? (wm[1]==='VRB' ? 'VRB' : parseInt(wm[1])) : null;
+    const wspd = wm ? parseInt(wm[2]) : null;
+    const wgst = wm && wm[4] ? parseInt(wm[4]) : null;
+    // Visibility (SM or metres)
+    const vm = p.match(/\b(\d+(?:\s+\d+\/\d+)?|\d+\/\d+)\s*SM\b/) || p.match(/\b(\d{4})\b(?!\s*FT)/);
+    const vis = vm ? vm[1] : null;
+    // Clouds
+    const clouds = []; let cm;
+    const cre = /\b(FEW|SCT|BKN|OVC|VV)(\d{3})\b/g;
+    while ((cm = cre.exec(p)) !== null) clouds.push({ type:cm[1], alt:parseInt(cm[2])*100 });
+    const ceiling = clouds.find(c => ['BKN','OVC','VV'].includes(c.type));
+    const sky = clouds.length ? clouds.map(c=>c.type+c.alt).join(' ') : (p.includes('SKC')||p.includes('CLR') ? 'CLR' : '—');
+    // WX phenomena
+    const wxMatch = p.match(/\b[+-]?(?:TS|SH)?(?:DZ|RA|SN|SG|IC|PL|GR|GS)(?:TS|SH)?\b|\b(?:BR|FG|FU|VA|DU|SA|HZ|PY|PO|SQ|FC|SS|DS)\b/g);
+    const wx = wxMatch ? [...new Set(wxMatch)].join(' ') : '';
+    // Cat
+    const visNum = parseFloat(String(vis).replace(/\s+\d+\/\d+/,'')) || 10;
+    const cigFt = ceiling ? ceiling.alt : 9999;
+    let cat = 'VFR';
+    if (visNum<1||cigFt<500) cat='LIFR'; else if (visNum<3||cigFt<1000) cat='IFR'; else if (visNum<=5||cigFt<=3000) cat='MVFR';
+    periods.push({ type, prob, start, end, wdir, wspd, wgst, vis, cig: ceiling?.alt??null, sky, wx, cat });
+  }
+  return periods.length > 0 ? periods : null;
+}
+
+function renderTafDecoded(taf) {
+  if (!taf) return '<div class="wx-no-data" style="padding:8px">No TAF available</div>';
+  const periods = taf.periods || parseTafPeriods(taf.rawTAF);
+  if (!periods || !periods.length) {
+    return '<div class="metar-raw" style="margin-top:4px">' + escapeHtml(taf.rawTAF||'No TAF') + '</div>';
+  }
+  const cc = c => ({VFR:'#0d8c68',MVFR:'#1a6ec7',IFR:'#c73030',LIFR:'#a020a0'}[c]||'#888');
+  const fmtWind = p => p.wdir===null ? '—' :
+    (p.wdir==='VRB'?'VRB':String(p.wdir).padStart(3,'0'))+'@'+(p.wspd||0)+(p.wgst?'G'+p.wgst:'')+'kt';
+  const fmtTime = p => {
+    // ISO date from AVWX: "2024-01-16T18:00:00Z" → "D16/18Z"
+    if (p.start && p.start.includes('T')) {
+      const s = new Date(p.start), e = p.end ? new Date(p.end) : null;
+      const fmt = d => `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCHours()).padStart(2,'0')}Z`;
+      return p.type==='FM' ? fmt(s) : `${fmt(s)}–${e?fmt(e):'?'}`;
+    }
+    return p.type==='FM' ? p.start : (p.start+(p.end?'–'+p.end:''));
+  };
+  const badgeClass = t => t==='TEMPO'?'tempo':t==='BECMG'?'becmg':(t==='PROB'||String(t).startsWith('PROB'))?'prob':'';
+  const typeLabel = p => p.prob ? `PROB${p.prob}${p.type!=='PROB'?' '+p.type:''}` : p.type;
+
+  let rows = '';
+  for (const p of periods) {
+    rows += `<tr>
+      <td><span class="taf-type-badge ${badgeClass(p.type)}">${escapeHtml(typeLabel(p))}</span></td>
+      <td class="taf-time">${escapeHtml(fmtTime(p))}</td>
+      <td>${escapeHtml(fmtWind(p))}</td>
+      <td>${escapeHtml(String(p.vis??'—'))} SM</td>
+      <td>${escapeHtml(p.sky||'—')}</td>
+      <td>${escapeHtml(p.wx||'—')}</td>
+      <td><span class="flt-cat-badge" style="background:${cc(p.cat)};font-size:9px;padding:1px 4px">${p.cat||'?'}</span></td>
+    </tr>`;
+  }
+  return '<div class="taf-decode-wrap"><table class="taf-decode-table">'
+    + '<thead><tr><th>Type</th><th>Time</th><th>Wind</th><th>Vis</th><th>Sky</th><th>WX</th><th>Cat</th></tr></thead>'
+    + '<tbody>' + rows + '</tbody></table></div>';
 }
 
 // ===== WEATHER =====
@@ -3128,12 +3362,22 @@ async function fetchWx() {
     const el = document.getElementById('sigmet-content');
     if (el) el.innerHTML = '<div class="wx-no-data"><a href="https://aviationweather.gov/en/category/sigmet" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:none;">View active SIGMETs on AWC ↗</a></div>';
   }
-  // NOTAMs — free public API, always fetch
+  // NOTAMs — best-effort public fetch with manual imported fallback
   btn.textContent = 'Fetching NOTAMs…';
-  const notamData = await fetchNotamsPublic(icaos);
-  renderNotams(notamData);
-  const hint = document.getElementById('notam-hint');
-  if (hint) hint.style.display = 'none';
+  try {
+    const notamData = await fetchNotamsPublic(icaos);
+    renderNotams(notamData);
+    const hint = document.getElementById('notam-hint');
+    if (hint) hint.style.display = 'none';
+  } catch(e) {
+    console.warn('NOTAM fetch chain failed:', e.message);
+    const manualData = {};
+    icaos.forEach(icao => {
+      const manual = getManualNotamsFor(icao);
+      manualData[icao] = manual.length ? { items: manual, source: 'manual' } : null;
+    });
+    renderNotams(manualData);
+  }
 
   btn.disabled = false;
   btn.textContent = 'FETCH WX';
@@ -3181,14 +3425,20 @@ function renderWxCard(icao, metar, taf, cached, ts) {
   const cachedBadge = cached ? '<span class="cache-badge">CACHED '+(ageStr||'')+'</span>' : '';
   const esc = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
 
-  const tafBlock = taf
+  // RAW: monospace METAR string + raw TAF expand
+  const rawTafBlock = taf
     ? '<details class="taf-section"><summary>TAF ▸</summary><div class="metar-raw">'+esc(taf.rawTAF||'No TAF')+'</div></details>'
+    : '<div style="font-size:11px;color:var(--text-dim);margin-top:6px;">No TAF available</div>';
+
+  // DECODED: parsed METAR grid + TAF period table
+  const decodedTafBlock = taf
+    ? '<details class="taf-section" open><summary>TAF ▸</summary>' + renderTafDecoded(taf) + '</details>'
     : '<div style="font-size:11px;color:var(--text-dim);margin-top:6px;">No TAF available</div>';
 
   const rawView = metar
     ? '<div class="wx-raw-view card-body" style="padding:8px 10px;">'
       + '<div class="metar-raw">'+esc(metar.rawOb||'No raw METAR')+'</div>'
-      + tafBlock + '</div>'
+      + rawTafBlock + '</div>'
     : '<div class="wx-raw-view card-body"><div class="wx-no-data">No data — fetch when connected</div></div>';
 
   const decodedView = metar
@@ -3201,7 +3451,7 @@ function renderWxCard(icao, metar, taf, cached, ts) {
       + '<div class="wx-item"><div class="wx-lbl">Temp / Dew</div><div class="wx-val">'+(metar.temp!==undefined?metar.temp:'—')+'° / '+(metar.dewp!==undefined?metar.dewp:'—')+'°</div></div>'
       + '<div class="wx-item"><div class="wx-lbl">Altimeter</div><div class="wx-val">'+(metar.altim?metar.altim.toFixed(2)+' inHg':'—')+'</div></div>'
       + '</div>'
-      + tafBlock + '</div>'
+      + decodedTafBlock + '</div>'
     : '<div class="wx-decoded-view card-body" style="display:none"><div class="wx-no-data">No data</div></div>';
 
   card.innerHTML =
